@@ -19,6 +19,18 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
+## Page order
+
+1. **Top:** what you offer and a "Check your date" button. Each of the three service shortcuts jumps to the booking form with that event type already selected.
+2. **Kind words:** a scrolling band of client reviews (it pauses on hover or keyboard focus) and a list of venues you've played.
+3. **The crate:** the record catalog (the live chart, by genre).
+4. **The booth:** two turntables and a mixer.
+5. About, services and packages, and the booking form.
+
+### Reviews and venues
+
+Edit `js/reviews.js`. Each review has a quote, a name, the event type, optional venue, city and year, and an optional star rating (only add one if it comes from a real rating). Entries marked `placeholder: true` are drawn as dashed "add yours" cards, so nothing looks like a real review until it is one. Replace them and delete the placeholders. Five or six reviews make a good scroll.
+
 ## Customise
 
 | What | Where |
@@ -26,7 +38,8 @@ python3 -m http.server 8000
 | Booking email, form backend, social links | `js/config.js` |
 | The live chart (on/off, country) | `js/config.js` |
 | The generated sets (titles, genres, BPM, colours, blurbs) | `js/records.js` |
-| About text, services, process steps | `index.html` |
+| Reviews and venues you've played | `js/reviews.js` |
+| Top section, About text, services, process steps | `index.html` |
 | Your photo | Add `assets/portrait.jpg` (square works best). A styled placeholder shows until you do. |
 | Colours and fonts | CSS variables at the top of `css/styles.css` |
 

@@ -6,12 +6,32 @@ import { loadChart, sampleColors, GENRES } from './chart.js';
 import { coverSVG } from './covers.js';
 import { initBooking } from './booking.js';
 import { CONFIG } from './config.js';
+import { REVIEWS, VENUES } from './reviews.js';
 
 const $ = (id) => document.getElementById(id);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 document.querySelectorAll('.yr').forEach((e) => (e.textContent = new Date().getFullYear()));
+
+// ------------------------------------------------------------ reviews + venues
+const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+function renderReviews() {
+  const track = $('reviewTrack');
+  const stars = (n) => `<span class="rv-stars" aria-label="${n} out of 5 stars">${'★'.repeat(n)}<i>${'★'.repeat(5 - n)}</i></span>`;
+  const card = (r, dup) => `<li class="rv${r.placeholder ? ' placeholder' : ''}"${dup ? ' aria-hidden="true"' : ''}>
+      ${r.placeholder ? '<span class="rv-tag mono">Placeholder · edit js/reviews.js</span>' : ''}
+      ${r.rating ? stars(Math.max(1, Math.min(5, Math.round(r.rating)))) : ''}
+      <blockquote>“${esc(r.quote)}”</blockquote>
+      <p class="rv-by"><b>${esc(r.name)}</b><span class="mono">${esc(r.event)}${r.where ? ` · ${esc(r.where)}` : ''}</span></p>
+    </li>`;
+  // the list runs twice so the scroll loops seamlessly
+  track.innerHTML = REVIEWS.map((r) => card(r, false)).join('') + REVIEWS.map((r) => card(r, true)).join('');
+  track.style.setProperty('--dur', `${Math.max(30, REVIEWS.length * 11)}s`);
+  $('venueList').innerHTML = VENUES.map((v) => `<li class="${v.placeholder ? 'placeholder' : ''}"><b>${esc(v.name)}</b>${v.city ? `<span class="mono">${esc(v.city)}</span>` : ''}</li>`).join('');
+}
+renderReviews();
 
 // ------------------------------------------------------------ crate meta + ruler
 // The ruler under the shelf: tempo for the generated sets, chart position for songs.
@@ -130,7 +150,9 @@ function buildGenreBar(current) {
     const b = e.target.closest('button[data-genre]');
     if (b && b.getAttribute('aria-selected') !== 'true') switchGenre(b.dataset.genre);
   });
-  bar.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  // centre the chosen genre inside the row, without scrolling the page
+  const sel = bar.querySelector('[aria-selected="true"]');
+  if (sel) bar.scrollLeft = sel.offsetLeft - (bar.clientWidth - sel.offsetWidth) / 2;
 }
 
 let genreReq = 0;
@@ -238,7 +260,7 @@ document.querySelectorAll('.format-sleeve').forEach((s) => {
 
 // ------------------------------------------------------------ header + reveals
 const topbar = document.querySelector('.topbar');
-const darkSections = [...document.querySelectorAll('.decks, .book, .footer')];
+const darkSections = [...document.querySelectorAll('.reviews, .decks, .book, .footer')];
 const onScroll = () => {
   topbar.classList.toggle('scrolled', window.scrollY > 20);
   const y = topbar.offsetHeight / 2;
