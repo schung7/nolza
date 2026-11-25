@@ -38,6 +38,7 @@ With `formEndpoint` empty, submitting opens the visitor's email app with the req
 
 By default the crate shows Apple's live **iTunes Top Songs** chart (`js/chart.js`). Each song is a record with its real cover art. Dropping it on the turntable streams Apple's 30-second preview, with scratching, pitch and spin-down. When a preview ends, the next song plays. Each song links to Apple Music, and the page credits "Previews courtesy of Apple Music".
 
+- **Auto-mix:** about 8 seconds before a preview ends, the next song starts underneath it and crossfades in. When the two tempos are within ±8%, the incoming song is sped up or slowed down to match, and started so its kick and bass hits land on the current song's. It then takes over the turntable without a gap, and the pitch fader shows the speed it's running at. When the tempos are too far apart, it does a plain 5-second blend instead. The **Auto-mix** button turns it off, and the choice is remembered on that device.
 - Change the store country, or turn the chart off, in `js/config.js` (`chart`).
 - Previews are kept in memory only, four at a time, and are never saved to disk or browser storage.
 - If the chart can't be reached, the site falls back to the generated sets below.

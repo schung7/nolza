@@ -1,6 +1,6 @@
 // Turntable UI: platter, tonearm, controls, scratching and the now-playing panel.
 
-import { Deck, loadAudio, RPM_BASE, RPM_45 } from './audio.js';
+import { Deck, loadAudio, planMix, alignMix, RPM_BASE, RPM_45 } from './audio.js';
 import { coverSVG, labelSVG } from './covers.js';
 
 // geometry in the turntable's 1000 x 760 design space
@@ -37,12 +37,17 @@ export class DeckUI {
     this.recAngle = 0; this.platAngle = 0;
     this.busy = false;
     this.scratch = { on: false, last: 0, acc: 0 };
+    this.next = null;      // the song queued for the auto-mix: { rec, buf }
+    this.mixing = null;    // the mix in progress: { rec, plan }
+    this.autoMix = true;
+    try { this.autoMix = localStorage.getItem('nolza-automix') !== 'off'; } catch (e) {}
 
     this.el = {
       tt: $('turntable'), platter: $('platter'), edge: $('platterEdge'), record: $('record'), label: $('recordLabel'),
       armGroup: $('armGroup'), tonearm: $('tonearm'), start: $('startBtn'), cue: $('cueBtn'), pitch: $('pitch'), pitchVal: $('pitchVal'),
       sleeve: $('npSleeve'), cat: $('npCat'), title: $('npTitle'), genre: $('npGenre'), blurb: $('npBlurb'), flow: $('npFlow'),
       bpm: $('npBpm'), bpmLabel: $('npBpm').previousElementSibling, rpm: $('npRpm'), time: $('npTime'), viz: $('viz'), vol: $('volume'), dot: $('npDot'), apple: $('npApple'),
+      mix: $('npMix'), xfKnob: $('xfKnob'), xfLabel: $('xfLabel'), autoMixBtn: $('autoMixBtn'),
     };
     this.bind();
     this.setArm(REST);
@@ -71,6 +76,15 @@ export class DeckUI {
     // when a preview runs out, lift the arm and spin the next song, like an auto-DJ
     deck.onEnd = () => setTimeout(() => { if (deck.ended && !this.busy) this.step(1); }, 700);
     $('npNext').addEventListener('click', () => this.step(1));
+    // auto-mix: blend into the next chart song during the last seconds
+    deck.onMixDone = () => this.adoptMix();
+    const paintAuto = () => { el.autoMixBtn.setAttribute('aria-pressed', this.autoMix); el.autoMixBtn.textContent = `Auto-mix ${this.autoMix ? 'on' : 'off'}`; };
+    el.autoMixBtn.addEventListener('click', () => {
+      this.autoMix = !this.autoMix; paintAuto();
+      try { localStorage.setItem('nolza-automix', this.autoMix ? 'on' : 'off'); } catch (e) {}
+      if (!this.autoMix && deck.mix) { deck.cancelMix(); this.mixing = null; }
+    });
+    paintAuto();
     $('randomRec').addEventListener('click', () => this.load(this.records[Math.floor(Math.random() * this.records.length)], { autoplay: true }));
 
     // scratching
@@ -126,13 +140,14 @@ export class DeckUI {
   toggleMotor() {
     if (!this.rec) return;
     const on = !this.deck.motorOn;
+    if (!on) this.stopMix();
     this.setMotor(on);
     if (on && this.armMode === 'rest') this.armToRecord();
   }
 
   cue() {
     if (!this.rec) return;
-    if (this.armMode === 'down') { this.armMode = 'up'; this.deck.setNeedle(false); }
+    if (this.armMode === 'down') { this.armMode = 'up'; this.deck.setNeedle(false); this.stopMix(); }
     else if (this.armMode === 'up') { this.armMode = 'down'; this.deck.setNeedle(true); }
     else if (this.armMode === 'rest') this.armToRecord();
     this.el.tonearm.classList.toggle('lifted', this.armMode !== 'down');
@@ -171,6 +186,8 @@ export class DeckUI {
     this.busy = true;
     this.prime();
     const { el, deck } = this;
+    this.stopMix();
+    this.next = null;
     const bufferP = loadAudio(rec);
     bufferP.catch(() => {});
 
@@ -212,6 +229,97 @@ export class DeckUI {
     this.emit();
     if (this.pending) { const p = this.pending; this.pending = null; return this.load(p.rec, { autoplay: p.autoplay }); }
     if (autoplay) { this.setMotor(true); this.armToRecord(); }
+    this.prepareNext();
+  }
+
+  // ------------------------------------------------------------ auto-mix
+
+  /** fetch the following chart song so it's ready to mix in */
+  prepareNext() {
+    this.next = null;
+    if (!this.rec || this.rec.kind !== 'song') return;
+    const rec = this.records[(this.rec.index + 1) % this.records.length];
+    const token = (this.next = { rec, buf: null, align: null });
+    const cur = this.deck.buffer;
+    loadAudio(rec).then(async (buf) => {
+      if (this.next !== token) return;
+      token.buf = buf;
+      // work out the beat alignment ahead of time, for a mix starting at the planned point
+      const plan = planMix(cur.beat, buf.beat);
+      if (!plan.beatMatched) return;
+      const posA = cur.duration - 8 - 0.6;
+      const al = await alignMix(cur, buf, plan, posA, 8);
+      if (this.next === token && this.deck.buffer === cur) token.align = { ...al, posA, plan };
+    }).catch(() => {});
+  }
+
+  stopMix() {
+    if (this.deck.mix) this.deck.cancelMix();
+    this.mixing = null;
+  }
+
+  /** start the mix once the current preview is close enough to its end */
+  maybeMix() {
+    const { deck } = this, nx = this.next;
+    if (!this.autoMix || this.busy || !this.rec || this.rec.kind !== 'song' || deck.mix || deck.loop) return;
+    if (!deck.needle || !deck.motorOn || this.armMode !== 'down' || deck.scratching || !nx?.buf) return;
+    const speed = Math.max(0.05, Math.abs(deck.rate));
+    const left = (deck.length - deck.pos) / speed;            // real seconds left on this record
+    const plan = planMix(deck.buffer.beat, nx.buf.beat);
+    const fade = plan.beatMatched ? 8 : 5;
+    if (left > fade + 0.6 || left < 1) return;                // previews fade out at the very end
+    let offset = 0.35, ratio = plan.ratio;
+    if (plan.beatMatched && nx.align) {
+      // the pre-computed alignment, shifted by however far A is from the planned start
+      ratio = nx.align.ratio;
+      offset = nx.align.offset + (deck.pos - nx.align.posA) * ratio;
+      plan.ratio = ratio;
+    } else if (plan.beatMatched) {
+      // start the incoming record so its beats land on this record's beats
+      const ob = deck.buffer.beat;
+      const untilBeat = ((((ob.phase - deck.pos) % ob.period) + ob.period) % ob.period) / speed;
+      const rateB = Math.abs(deck.motor) * plan.ratio, P = plan.inPeriod;
+      offset = ((((nx.buf.beat.phase - untilBeat * rateB) % P) + P) % P);
+      while (offset < 0.3) offset += P;
+    }
+    if (deck.startMix(nx.buf, { ratio, offset, fade: Math.min(fade, left - 0.3) })) this.mixing = { rec: nx.rec, plan };
+  }
+
+  /** the incoming song takes over the platter mid-flow */
+  adoptMix() {
+    const m = this.mixing, { el, deck } = this;
+    this.mixing = null;
+    if (!m) return;
+    const res = deck.adoptMix();
+    if (!res) return;
+    this.rec = m.rec;
+    this.bpm = deck.buffer.bpm || 120;
+    el.pitch.value = (res.pitch * 100).toFixed(1);
+    el.pitchVal.textContent = `${res.pitch > 0 ? '+' : ''}${(res.pitch * 100).toFixed(1)}%`;
+    this.fillPanel(m.rec);
+    el.title.textContent = m.rec.title;
+    el.genre.textContent = m.rec.artist;
+    el.record.classList.add('swap');
+    setTimeout(() => { el.label.innerHTML = `<img src="${esc(m.rec.art)}" alt="" draggable="false">`; }, 160);
+    setTimeout(() => el.record.classList.remove('swap'), 420);
+    this.emit();
+    this.prepareNext();
+  }
+
+  paintMix() {
+    const { el, deck } = this;
+    const song = this.rec?.kind === 'song';
+    if (el.mix.hidden === song) el.mix.hidden = !song;
+    if (!song) return;
+    const p = deck.mix ? deck.mix.progress : 0;
+    el.xfKnob.style.left = `${(p * 100).toFixed(1)}%`;
+    let label;
+    if (this.mixing) {
+      const pl = this.mixing.plan, pc = (pl.ratio - 1) * 100;
+      label = `Mixing into ${this.mixing.rec.cat} ${this.mixing.rec.title}${pl.beatMatched ? ` · beat-matched ${pc >= 0 ? '+' : '−'}${Math.abs(pc).toFixed(1)}%` : ' · blend'}`;
+    } else if (this.autoMix && this.next) label = `Next in the mix · ${this.next.rec.cat} ${this.next.rec.title}`;
+    else label = 'Auto-mix off';
+    if (label !== this.mixLabel) { el.xfLabel.textContent = label; this.mixLabel = label; }
   }
 
   fillPanel(rec) {
@@ -281,6 +389,8 @@ export class DeckUI {
       el.rpm.textContent = (Math.abs(deck.motor) * 33.33).toFixed(1).padStart(4, '0');
       el.time.textContent = deck.loop ? fmt(deck.played) : fmt(Math.max(0, deck.pos));
     }
+    this.maybeMix();
+    this.paintMix();
     this.drawViz();
     requestAnimationFrame((tt) => this.frame(tt));
   }

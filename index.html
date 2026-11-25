@@ -193,6 +193,10 @@
             <div><span class="lbl">Time</span><span class="val" id="npTime">0:00</span></div>
           </div>
           <canvas class="np-viz" id="viz" height="80" aria-hidden="true"></canvas>
+          <div class="np-mix" id="npMix" hidden>
+            <div class="xf" aria-hidden="true"><span class="mono">A</span><div class="xf-track"><i id="xfKnob"></i></div><span class="mono">B</span></div>
+            <p class="mono xf-label" id="xfLabel" aria-live="polite"></p>
+          </div>
 
           <p class="np-blurb" id="npBlurb"></p>
           <ol class="np-flow" id="npFlow"></ol>
@@ -200,6 +204,7 @@
           <div class="np-actions">
             <button class="chip" id="npPrev" aria-label="Load previous record">← Prev</button>
             <button class="chip" id="npNext" aria-label="Load next record">Next →</button>
+            <button class="chip" id="autoMixBtn" aria-pressed="true">Auto-mix on</button>
             <label class="vol mono">Vol <input type="range" id="volume" min="0" max="1" step="0.01" value="0.85" aria-label="Volume" /></label>
           </div>
           <a class="np-apple" id="npApple" href="https://music.apple.com" target="_blank" rel="noopener" hidden>

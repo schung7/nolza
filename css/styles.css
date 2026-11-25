@@ -402,6 +402,18 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 .np-readout .lbl { color: var(--night-muted); font-size: 10px; }
 .np-readout .val { font-size: 22px; letter-spacing: .02em; color: var(--night-ink); font-variant-numeric: tabular-nums; }
 .np-viz { width: 100%; height: 80px; margin: 16px 0 10px; display: block; }
+/* crossfader for the auto-mix */
+.np-mix { margin: 2px 0 18px; }
+.np-mix[hidden] { display: none; }
+.xf { display: flex; align-items: center; gap: 12px; color: var(--night-muted); }
+.xf .mono { font-size: 10px; }
+.xf-track { position: relative; flex: 1; height: 6px; border-radius: 3px; background: #0b0b0c; box-shadow: inset 0 0 0 1px #000, 0 1px 0 rgba(255,255,255,.06); }
+.xf-track i { position: absolute; top: 50%; left: 0; width: 34px; height: 18px; margin: -9px 0 0 -17px; border-radius: 3px; background: linear-gradient(180deg, #e6e6e2, #8e8f8b); box-shadow: 0 3px 6px rgba(0,0,0,.6), inset 0 -2px 0 rgba(0,0,0,.25); transition: left .3s linear; }
+.xf-track i::after { content: ''; position: absolute; left: 50%; top: 3px; bottom: 3px; width: 2px; margin-left: -1px; background: var(--accent); }
+.xf-label { margin: 10px 0 0; color: var(--night-muted); font-size: 10px; letter-spacing: .1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#autoMixBtn[aria-pressed="true"] { color: #ffb08f; border-color: #6a3a2a; }
+.record.swap .record-label { animation: label-swap .42s var(--ease); }
+@keyframes label-swap { 40% { opacity: 0; scale: .92; filter: blur(3px); } }
 .np-blurb { color: #c4c2bc; margin: 0 0 14px; }
 .np-flow { list-style: none; margin: 0 0 22px; padding: 0; counter-reset: f; }
 .np-flow li { counter-increment: f; display: flex; gap: 14px; padding: 9px 0; border-bottom: 1px dashed var(--night-line); font-size: 15px; }
