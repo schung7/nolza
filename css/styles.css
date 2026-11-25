@@ -88,13 +88,13 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 /* ------------------------------------------------------------------ crate / hero */
 .crate {
   min-height: max(720px, 100svh);
-  display: grid; grid-template-rows: auto 1fr auto auto auto;
+  display: grid; grid-template-rows: auto 1fr auto auto auto; grid-template-columns: minmax(0, 1fr);
   padding: 92px 0 18px; position: relative; overflow: hidden; overflow: clip;
   background:
     radial-gradient(1200px 500px at 50% 62%, rgba(255,255,255,.55), transparent 70%),
     var(--bg);
 }
-.crate-intro { text-align: center; padding: 0 var(--gutter); }
+.crate-intro { text-align: center; padding: 0 var(--gutter); min-width: 0; }
 .crate-intro .kicker { justify-content: center; margin-bottom: 8px; }
 .crate-title { margin: 0; font-weight: 600; letter-spacing: -.04em; font-size: clamp(28px, 3.6vw, 50px); line-height: 1; }
 .crate-title em { font-style: italic; font-weight: 500; color: var(--accent); }
@@ -241,6 +241,27 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 .ruler-labels span.on { color: var(--accent); }
 .crate-foot { display: flex; justify-content: space-between; gap: 16px; padding: 14px var(--gutter) 0; color: var(--muted); font-size: 10.5px; }
 .crate-foot a { text-decoration: none; }
+/* genre charts */
+.genre-bar {
+  display: flex; gap: 6px; justify-content: center; margin: 16px calc(var(--gutter) * -1) 0; padding: 2px var(--gutter);
+  overflow-x: auto; scrollbar-width: none; max-width: 100%;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
+  mask: linear-gradient(90deg, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
+}
+.genre-bar[hidden] { display: none; }
+.genre-bar::-webkit-scrollbar { display: none; }
+.genre-bar button {
+  flex: none; border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 6px 13px;
+  font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2);
+  transition: background .2s, color .2s, border-color .2s, transform .2s var(--ease-spring);
+}
+.genre-bar button:hover { border-color: var(--ink); color: var(--ink); }
+.genre-bar button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.genre-bar button:active { transform: scale(.95); }
+@media (max-width: 900px) { .genre-bar { justify-content: flex-start; } }
+.crate.loading .crate-intro::after { content: ''; display: block; width: 26px; height: 26px; margin: 18px auto 0; border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0 22%, #151515 24% 100%); animation: spin .8s linear infinite; position: absolute; left: 50%; top: 50%; margin-left: -13px; }
+.crate { position: relative; }
 /* the shelf fades in once the crate (chart or sets) is ready */
 .shelf-wrap, .crate-info, .ruler { transition: opacity .8s var(--ease); }
 .crate:not(.ready) .shelf-wrap, .crate:not(.ready) .crate-info, .crate:not(.ready) .ruler { opacity: 0; }

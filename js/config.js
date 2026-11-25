@@ -13,7 +13,10 @@ export const CONFIG = {
   // The crate shows Apple's live iTunes Top Songs chart, playing 30-second
   // previews on the turntable. Set enabled: false to use the generated sets
   // in js/records.js instead. country is a two-letter store code (us, gb, kr…).
-  chart: { enabled: true, country: 'us' },
+  // genre is the chart shown first ('' = all genres; ids are listed in js/chart.js,
+  // e.g. '17' Dance, '14' Pop, '51' K-Pop). Visitors can switch with the genre buttons,
+  // and their choice is remembered on their device.
+  chart: { enabled: true, country: 'us', genre: '' },
 
   socials: {
     instagram: 'https://instagram.com/',

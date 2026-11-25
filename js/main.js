@@ -2,7 +2,7 @@ import { RECORDS } from './records.js';
 import { Shelf } from './shelf.js';
 import { DeckUI } from './deck.js';
 import { loadAudio } from './audio.js';
-import { loadChart, sampleColors } from './chart.js';
+import { loadChart, sampleColors, GENRES } from './chart.js';
 import { coverSVG } from './covers.js';
 import { initBooking } from './booking.js';
 import { CONFIG } from './config.js';
@@ -101,19 +101,80 @@ async function spin(r) {
   deckUI.load(r, { autoplay: true });
 }
 
+/** show a chart's details around the crate */
+function showChart(chart, genreName) {
+  const when = chart.updated ? new Date(chart.updated) : null;
+  $('crateSource').textContent = `${chart.title}${when && !isNaN(when) ? ` · ${when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}`;
+  $('crateCredit').hidden = false;
+  $('crateKicker').textContent = genreName && genreName !== 'All'
+    ? `Top ${chart.songs.length} in ${genreName}, ready on the decks`
+    : `This week’s top ${chart.songs.length}, ready on the decks`;
+}
+
+let colorRun = 0;
+function colorSpines(list) {
+  const run = ++colorRun;
+  sampleColors(list, (r) => {
+    if (run !== colorRun) return;
+    shelf.recolor(r);
+    if (r === shelf.record) meta.style.setProperty('--rec-ac', r.pal.fg);
+  });
+}
+
+/** genre buttons above the crate */
+function buildGenreBar(current) {
+  const bar = $('genreBar');
+  bar.hidden = false;
+  bar.innerHTML = GENRES.map((g) => `<button type="button" role="tab" data-genre="${g.id}" aria-selected="${g.id === current}">${g.name}</button>`).join('');
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-genre]');
+    if (b && b.getAttribute('aria-selected') !== 'true') switchGenre(b.dataset.genre);
+  });
+  bar.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+let genreReq = 0;
+async function switchGenre(id) {
+  const g = GENRES.find((x) => x.id === id) || GENRES[0];
+  const req = ++genreReq;
+  $('genreBar').querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', b.dataset.genre === g.id));
+  try { localStorage.setItem('nolza-genre', g.id); } catch (e) {}
+  const crate = document.querySelector('.crate');
+  crate.classList.remove('ready');
+  crate.classList.add('loading');
+  const [chart] = await Promise.all([
+    loadChart({ country: CONFIG.chart?.country || 'us', genre: g.id }).catch(() => null),
+    wait(reduced ? 0 : 450), // let the shelf fade out first
+  ]);
+  if (req !== genreReq) return;
+  crate.classList.remove('loading');
+  if (!chart) { crate.classList.add('ready'); $('crateKicker').textContent = `Couldn’t load the ${g.name} chart — try again`; return; }
+  records = chart.songs;
+  axis = makeAxis(records);
+  buildRuler();
+  shelf.setRecords(records, 0);
+  deckUI.setRecords(records);
+  showChart(chart, g.name);
+  crate.classList.add('ready');
+  colorSpines(records);
+}
+
 async function initCrate() {
   // The live chart when it's reachable, otherwise the generated sets.
-  let chart = null;
+  let chart = null, genre = CONFIG.chart?.genre || '';
+  try { genre = localStorage.getItem('nolza-genre') ?? genre; } catch (e) {}
+  if (!GENRES.some((g) => g.id === genre)) genre = '';
   if (CONFIG.chart?.enabled !== false) {
-    try { chart = await loadChart({ country: CONFIG.chart?.country || 'us' }); } catch (e) { console.info('Chart unavailable, using the generated sets.', e); }
+    const country = CONFIG.chart?.country || 'us';
+    try { chart = await loadChart({ country, genre }); } catch (e) {
+      try { if (genre) chart = await loadChart({ country }); genre = ''; } catch (e2) { console.info('Chart unavailable, using the generated sets.', e2); }
+    }
   }
   if (chart) {
     records = chart.songs;
     deckUI.setRecords(records);
-    const when = chart.updated ? new Date(chart.updated) : null;
-    $('crateSource').textContent = `${chart.title}${when && !isNaN(when) ? ` · ${when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}`;
-    $('crateCredit').hidden = false;
-    $('crateKicker').textContent = `This week’s top ${records.length}, ready on the decks`;
+    showChart(chart, GENRES.find((g) => g.id === genre)?.name);
+    buildGenreBar(genre);
   }
   axis = makeAxis(records);
   buildRuler();
@@ -131,7 +192,7 @@ async function initCrate() {
   });
   updateMeta(shelf.record);
   document.querySelector('.crate').classList.add('ready');
-  if (chart) sampleColors(records, (r) => { shelf.recolor(r); if (r === shelf.record) meta.style.setProperty('--rec-ac', r.pal.fg); });
+  if (chart) colorSpines(records);
 
   $('prevRec').addEventListener('click', () => shelf.go(-1));
   $('nextRec').addEventListener('click', () => shelf.go(1));

@@ -119,8 +119,11 @@ export class DeckUI {
     el.tt.addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === el.tt) { e.preventDefault(); this.prime(); this.toggleMotor(); } });
   }
 
+  /** where the playing record sits in the current list (-1 if it's from another genre) */
+  indexOf(rec) { return rec ? this.records.findIndex((r) => r.id === rec.id) : -1; }
+
   step(dir) {
-    const i = this.rec ? this.rec.index : -1;
+    const i = this.indexOf(this.rec);
     const n = this.records.length;
     this.load(this.records[(i + dir + n) % n], { autoplay: true });
   }
@@ -238,7 +241,7 @@ export class DeckUI {
   prepareNext() {
     this.next = null;
     if (!this.rec || this.rec.kind !== 'song') return;
-    const rec = this.records[(this.rec.index + 1) % this.records.length];
+    const rec = this.records[(this.indexOf(this.rec) + 1) % this.records.length];
     const token = (this.next = { rec, buf: null, align: null });
     const cur = this.deck.buffer;
     loadAudio(rec).then(async (buf) => {
@@ -331,7 +334,8 @@ export class DeckUI {
     if (song) {
       el.blurb.innerHTML = `${rec.album ? `From <em>${esc(rec.album)}</em>${rec.year ? ` (${esc(rec.year)})` : ''}. ` : ''}30-second preview, courtesy of Apple Music.`;
       const n = this.records.length;
-      el.flow.innerHTML = [1, 2, 3].map((k) => this.records[(rec.index + k) % n])
+      const at = this.indexOf(rec);
+      el.flow.innerHTML = [1, 2, 3].map((k) => this.records[(at + k + n) % n])
         .map((r) => `<li><button type="button" data-i="${r.index}"><span class="mono">${esc(r.cat)}</span> ${esc(r.title)} <i>${esc(r.artist)}</i></button></li>`).join('');
       el.apple.href = rec.url; el.apple.hidden = false;
     } else {
@@ -343,7 +347,14 @@ export class DeckUI {
   }
 
   /** swap the list of records the deck steps through (e.g. when the chart loads) */
-  setRecords(records) { this.records = records; }
+  setRecords(records) {
+    this.records = records;
+    if (this.rec?.kind === 'song') {
+      // keep playing; the auto-mix and "up next" now follow the new list
+      if (!this.mixing) this.prepareNext();
+      this.fillPanel(this.rec);
+    }
+  }
 
   emit() {
     const playing = !!this.rec && this.deck.motorOn && this.armMode === 'down';

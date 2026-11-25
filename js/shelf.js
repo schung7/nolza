@@ -54,7 +54,7 @@ export class Shelf {
       const spine = `<span class="spine-cat">${esc(r.cat.replace(/^NZ-|^#/, ''))}</span>
         <span class="spine-title">${esc(r.title)}<small>${esc(song ? r.artist : r.genre)}</small></span>
         <span class="spine-dot"></span>`;
-      const front = song ? `<img src="${esc(r.art)}" data-hi="${esc(r.art.replace('/300x300bb', '/600x600bb'))}" alt="" decoding="async" draggable="false">` : j < this.N ? coverSVG(r) : '';
+      const front = song ? `<img src="${esc(r.art)}" data-hi="${esc(r.art.replace('/300x300bb', '/600x600bb'))}" alt="" decoding="async" fetchpriority="low" draggable="false">` : j < this.N ? coverSVG(r) : '';
       const back = song ? songBackSVG(r) : j < this.N ? backSVG(r) : '';
       el.innerHTML = `<div class="case-box">
           <div class="disc"></div>
@@ -139,7 +139,11 @@ export class Shelf {
         el.classList.toggle('selected', isSel); el.tabIndex = isSel ? 0 : -1; el.isSel = isSel;
         // the cover facing you gets the sharp artwork
         const img = isSel && el.querySelector('.front img[data-hi]');
-        if (img) { const hi = img.dataset.hi; img.removeAttribute('data-hi'); const pre = new Image(); pre.onload = () => { img.src = hi; }; pre.src = hi; }
+        if (img) {
+          const hi = img.dataset.hi; img.removeAttribute('data-hi');
+          if (!img.complete) img.fetchPriority = 'high';
+          const pre = new Image(); pre.fetchPriority = 'high'; pre.onload = () => { img.src = hi; }; pre.src = hi;
+        }
       }
     }
   }
@@ -206,6 +210,23 @@ export class Shelf {
     this.setOpen(on ? 1 : 0);
   }
 
+  /** swap the crate's contents (e.g. a different genre chart) */
+  setRecords(records, start = 0) {
+    this.slots.forEach((el) => el.remove());
+    this.slots = [];
+    this.records = records;
+    this.N = records.length;
+    this.M = this.N * Math.max(1, Math.ceil(30 / this.N));
+    this.pos = this.target = start;
+    this.vel = 0; this.open = this.openTarget = this.openVel = 0;
+    this.pulling = false;
+    this.build();
+    this.measure();
+    this.render();
+    this.lastSel = this.sel;
+    this.onChange?.(this.record);
+  }
+
   /** update a record's spine colours (e.g. once its artwork colour is known) */
   recolor(r) {
     for (let j = r.index; j < this.M; j += this.N) {
@@ -217,7 +238,8 @@ export class Shelf {
   selectedEl() { return this.slots[mod(this.sel, this.M)]; }
 
   markOnDeck(rec) {
-    this.slots.forEach((el, j) => el.classList.toggle('on-deck', !!rec && j % this.N === rec.index));
+    const i = rec ? this.records.findIndex((r) => r.id === rec.id) : -1;
+    this.slots.forEach((el, j) => el.classList.toggle('on-deck', i >= 0 && j % this.N === i));
   }
 
   bind() {

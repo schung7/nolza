@@ -3,23 +3,40 @@
 // only held in memory (see js/audio.js). If the chart can't load, the site
 // falls back to the generated sets in js/records.js.
 
-const FEED = (country, limit) => `https://itunes.apple.com/${country}/rss/topsongs/limit=${limit}/json`;
-const META_KEY = 'nolza-chart-v1';
+const FEED = (country, limit, genre) => `https://itunes.apple.com/${country}/rss/topsongs/limit=${limit}${genre ? `/genre=${genre}` : ''}/json`;
+const META_KEY = 'nolza-chart-v2';
+
+/** genre charts offered above the crate (Apple genre ids) */
+export const GENRES = [
+  { id: '', name: 'All' },
+  { id: '14', name: 'Pop' },
+  { id: '18', name: 'Hip-Hop' },
+  { id: '15', name: 'R&B' },
+  { id: '17', name: 'Dance' },
+  { id: '7', name: 'Electronic' },
+  { id: '6', name: 'Country' },
+  { id: '12', name: 'Latin' },
+  { id: '51', name: 'K-Pop' },
+  { id: '21', name: 'Rock' },
+  { id: '20', name: 'Alternative' },
+  { id: '24', name: 'Reggae' },
+  { id: '11', name: 'Jazz' },
+];
 const META_TTL = 60 * 60 * 1000; // re-fetch the list at most hourly
 
-export async function loadChart({ country = 'us', limit = 100, timeout = 6000 } = {}) {
-  const cached = readCache(country);
+export async function loadChart({ country = 'us', genre = '', limit = 100, timeout = 6000 } = {}) {
+  const cached = readCache(country, genre);
   if (cached) return cached;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
-    const res = await fetch(FEED(country, limit), { signal: ctrl.signal });
+    const res = await fetch(FEED(country, limit, genre), { signal: ctrl.signal });
     if (!res.ok) throw new Error(`chart ${res.status}`);
     const feed = (await res.json()).feed;
     const songs = (feed.entry || []).map(toRecord).filter((s) => s.previewUrl);
     if (!songs.length) throw new Error('empty chart');
     songs.forEach((s, i) => { s.index = i; });
-    const chart = { songs, updated: feed.updated?.label, title: feed.title?.label || 'iTunes Top Songs', country };
+    const chart = { songs, updated: feed.updated?.label, title: feed.title?.label || 'iTunes Top Songs', country, genre };
     writeCache(chart);
     return chart;
   } finally {
@@ -105,13 +122,14 @@ export function sampleColors(songs, onColor) {
   for (let k = 0; k < 4; k++) next();
 }
 
-function readCache(country) {
+const cacheKey = (country, genre) => `${META_KEY}:${country}:${genre || 'all'}`;
+function readCache(country, genre) {
   try {
-    const c = JSON.parse(sessionStorage.getItem(META_KEY));
-    if (c && c.country === country && Date.now() - c.at < META_TTL) return c.chart;
+    const c = JSON.parse(sessionStorage.getItem(cacheKey(country, genre)));
+    if (c && Date.now() - c.at < META_TTL) return c.chart;
   } catch (e) {}
   return null;
 }
 function writeCache(chart) {
-  try { sessionStorage.setItem(META_KEY, JSON.stringify({ at: Date.now(), country: chart.country, chart })); } catch (e) {}
+  try { sessionStorage.setItem(cacheKey(chart.country, chart.genre), JSON.stringify({ at: Date.now(), chart })); } catch (e) {}
 }
