@@ -79,7 +79,7 @@ async function spin(r) {
   deckUI.prime(); // unlock audio inside the click
   shelf.pull(true);
   renderRecord(r);
-  await wait(reduced ? 0 : 700);
+  await wait(reduced ? 0 : 1250); // let the disc slide all the way out before moving on
   const tt = $('turntable').getBoundingClientRect();
   window.scrollTo({ top: window.scrollY + tt.top - Math.max(70, (window.innerHeight - tt.height) / 2), behavior: reduced ? 'auto' : 'smooth' });
   await wait(reduced ? 0 : 900);

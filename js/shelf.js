@@ -292,7 +292,7 @@ export class Shelf {
     const box = this.wrap.getBoundingClientRect();
     if (c.classList.contains('selected')) {
       this.hideTip();
-      if (!this.pulling) this.setOpen(0.18);
+      if (!this.pulling && e.pointerType === 'mouse') this.setOpen(0.18);
       const cb = c.getBoundingClientRect();
       const px = (e.clientX - cb.left) / cb.width - 0.5, py = (e.clientY - cb.top) / cb.height - 0.5;
       c.querySelector('.case-box').style.transform = `rotateY(${px * 14}deg) rotateX(${-py * 10}deg)`;
