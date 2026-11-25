@@ -1,6 +1,6 @@
 // Turntable UI: platter, tonearm, controls, scratching and the now-playing panel.
 
-import { Deck, renderRecord, RPM_BASE, RPM_45 } from './audio.js';
+import { Deck, loadAudio, RPM_BASE, RPM_45 } from './audio.js';
 import { coverSVG, labelSVG } from './covers.js';
 
 // geometry in the turntable's 1000 x 760 design space
@@ -23,6 +23,7 @@ const A_OUT = armAngleFor(R_OUTER), A_IN = armAngleFor(R_INNER);
 
 const $ = (id) => document.getElementById(id);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 export class DeckUI {
@@ -41,7 +42,7 @@ export class DeckUI {
       tt: $('turntable'), platter: $('platter'), edge: $('platterEdge'), record: $('record'), label: $('recordLabel'),
       armGroup: $('armGroup'), tonearm: $('tonearm'), start: $('startBtn'), cue: $('cueBtn'), pitch: $('pitch'), pitchVal: $('pitchVal'),
       sleeve: $('npSleeve'), cat: $('npCat'), title: $('npTitle'), genre: $('npGenre'), blurb: $('npBlurb'), flow: $('npFlow'),
-      bpm: $('npBpm'), rpm: $('npRpm'), time: $('npTime'), viz: $('viz'), vol: $('volume'), dot: $('npDot'),
+      bpm: $('npBpm'), bpmLabel: $('npBpm').previousElementSibling, rpm: $('npRpm'), time: $('npTime'), viz: $('viz'), vol: $('volume'), dot: $('npDot'), apple: $('npApple'),
     };
     this.bind();
     this.setArm(REST);
@@ -65,6 +66,10 @@ export class DeckUI {
     el.pitch.addEventListener('dblclick', () => { el.pitch.value = 0; setPitch(); });
     el.vol.addEventListener('input', () => deck.setVolume(+el.vol.value));
     $('npPrev').addEventListener('click', () => this.step(-1));
+    // "up next" list
+    el.flow.addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) { this.prime(); this.load(this.records[+b.dataset.i], { autoplay: true }); } });
+    // when a preview runs out, lift the arm and spin the next song, like an auto-DJ
+    deck.onEnd = () => setTimeout(() => { if (deck.ended && !this.busy) this.step(1); }, 700);
     $('npNext').addEventListener('click', () => this.step(1));
     $('randomRec').addEventListener('click', () => this.load(this.records[Math.floor(Math.random() * this.records.length)], { autoplay: true }));
 
@@ -156,8 +161,8 @@ export class DeckUI {
   }
 
   grooveAngle() {
-    const side = this.deck.length * 6;
-    const p = Math.min(1, this.deck.played / side);
+    // a preview plays once across the side; a generated set creeps in slowly as it loops
+    const p = this.deck.loop ? Math.min(1, this.deck.played / (this.deck.length * 6)) : Math.min(1, Math.max(0, this.deck.pos / this.deck.length));
     return A_OUT + (A_IN - A_OUT) * p;
   }
 
@@ -166,7 +171,8 @@ export class DeckUI {
     this.busy = true;
     this.prime();
     const { el, deck } = this;
-    const bufferP = renderRecord(rec);
+    const bufferP = loadAudio(rec);
+    bufferP.catch(() => {});
 
     if (this.rec) {
       deck.motorOn = false; el.start.setAttribute('aria-pressed', false);
@@ -181,12 +187,20 @@ export class DeckUI {
     this.fillPanel(rec);
     el.title.textContent = rec.title;
     el.genre.textContent = 'Cueing up…';
-    const buf = await bufferP;
-    el.genre.textContent = `${rec.genre} · ${rec.bpm} BPM`;
-    deck.setBuffer(buf);
+    let buf;
+    try { buf = await bufferP; } catch (err) {
+      el.genre.textContent = 'Couldn’t load this preview — try another record.';
+      this.rec = null; this.busy = false; el.platter.classList.remove('has-record'); this.emit();
+      return;
+    }
+    const song = rec.kind === 'song';
+    this.bpm = rec.bpm || buf.bpm || 120;
+    el.bpmLabel.textContent = song ? 'Pitch' : 'BPM';
+    el.genre.textContent = song ? rec.artist : `${rec.genre} · ${rec.bpm} BPM`;
+    deck.setBuffer(buf, { loop: !song });
     this.recAngle = Math.random() * 360;
 
-    el.label.innerHTML = labelSVG(rec);
+    el.label.innerHTML = rec.art ? `<img src="${esc(rec.art)}" alt="" draggable="false">` : labelSVG(rec);
     el.record.style.setProperty('--vinyl', rec.pal.vinyl);
     el.platter.classList.add('has-record');
     await wait(30);
@@ -202,12 +216,26 @@ export class DeckUI {
 
   fillPanel(rec) {
     const { el } = this;
-    el.sleeve.innerHTML = coverSVG(rec);
+    const song = rec.kind === 'song';
+    el.sleeve.innerHTML = song ? `<img src="${esc(rec.art)}" alt="Cover of ${esc(rec.title)}">` : coverSVG(rec);
     el.cat.textContent = `${rec.cat} — ${rec.genre}`;
-    el.blurb.textContent = rec.blurb;
-    el.flow.innerHTML = rec.flow.map((f) => `<li>${f}</li>`).join('');
+    el.flow.classList.toggle('upnext', song);
+    if (song) {
+      el.blurb.innerHTML = `${rec.album ? `From <em>${esc(rec.album)}</em>${rec.year ? ` (${esc(rec.year)})` : ''}. ` : ''}30-second preview, courtesy of Apple Music.`;
+      const n = this.records.length;
+      el.flow.innerHTML = [1, 2, 3].map((k) => this.records[(rec.index + k) % n])
+        .map((r) => `<li><button type="button" data-i="${r.index}"><span class="mono">${esc(r.cat)}</span> ${esc(r.title)} <i>${esc(r.artist)}</i></button></li>`).join('');
+      el.apple.href = rec.url; el.apple.hidden = false;
+    } else {
+      el.blurb.textContent = rec.blurb;
+      el.flow.innerHTML = rec.flow.map((f) => `<li>${esc(f)}</li>`).join('');
+      el.apple.hidden = true;
+    }
     document.querySelector('.decks').style.setProperty('--rec-ac', rec.pal.fg);
   }
+
+  /** swap the list of records the deck steps through (e.g. when the chart loads) */
+  setRecords(records) { this.records = records; }
 
   emit() {
     const playing = !!this.rec && this.deck.motorOn && this.armMode === 'down';
@@ -244,9 +272,14 @@ export class DeckUI {
 
     // readouts
     if (this.rec) {
-      el.bpm.textContent = (this.rec.bpm * Math.abs(deck.rate)).toFixed(1).padStart(5, '0');
+      if (this.rec.kind === 'song') {
+        // no reliable tempo for chart previews, so show speed like a real deck
+        let pc = (Math.abs(deck.rate) - 1) * 100;
+        if (Math.abs(pc) < 0.05) pc = 0;
+        el.bpm.textContent = `${pc >= 0 ? '+' : '−'}${Math.abs(pc).toFixed(1)}%`;
+      } else el.bpm.textContent = (this.bpm * Math.abs(deck.rate)).toFixed(1).padStart(5, '0');
       el.rpm.textContent = (Math.abs(deck.motor) * 33.33).toFixed(1).padStart(4, '0');
-      el.time.textContent = fmt(deck.played);
+      el.time.textContent = deck.loop ? fmt(deck.played) : fmt(Math.max(0, deck.pos));
     }
     this.drawViz();
     requestAnimationFrame((tt) => this.frame(tt));

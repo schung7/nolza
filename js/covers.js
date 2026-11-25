@@ -184,6 +184,25 @@ export function backSVG(r) {
   </svg>`;
 }
 
+/** Back of a chart single: title, artist, chart position, barcode. */
+export function songBackSVG(r) {
+  const mono = 'JetBrains Mono, ui-monospace, monospace';
+  const sans = 'Inter Tight, Inter, system-ui, sans-serif';
+  const R = rng(r.id + 'bc');
+  let bars = '';
+  for (let x = 0; x < 120;) { const w = 1 + Math.floor(R() * 4); if (R() > 0.35) bars += `<rect x="${440 + x}" y="470" width="${w}" height="70" fill="#141414"/>`; x += w + 1; }
+  const t = esc(r.title.length > 26 ? r.title.slice(0, 25) + '…' : r.title);
+  return `<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" class="cover-svg" aria-hidden="true">
+    <rect width="600" height="600" fill="#f1efe9"/>
+    <text x="40" y="96" font-family="${sans}" font-size="120" font-weight="800" letter-spacing="-6" fill="#151515">${esc(r.cat)}</text>
+    <text x="40" y="170" font-family="${sans}" font-size="32" font-weight="700" fill="#151515">${t}</text>
+    <text x="40" y="212" font-family="${sans}" font-size="24" fill="#151515" opacity=".7">${esc(r.artist.slice(0, 40))}</text>
+    <text x="40" y="300" font-family="${mono}" font-size="16" letter-spacing="2" fill="#151515" opacity=".6">${esc(r.genre.toUpperCase())}${r.year ? ' · ' + esc(r.year) : ''}</text>
+    <text x="40" y="330" font-family="${mono}" font-size="16" letter-spacing="2" fill="#151515" opacity=".6">PREVIEW COURTESY OF APPLE MUSIC</text>
+    <rect x="430" y="460" width="140" height="100" fill="#fff"/>${bars}
+  </svg>`;
+}
+
 /** Centre label for the vinyl, with text running around the edge. */
 export function labelSVG(r) {
   const id = `lb${++uid}`;

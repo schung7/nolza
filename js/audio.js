@@ -56,6 +56,68 @@ export function renderRecord(rec) {
   return cache.get(rec.id);
 }
 
+// ----------------------------------------------------------- chart previews
+// 30-second Apple previews: fetched when needed, decoded, and held in memory
+// only (a few at a time). Nothing is written to disk or browser storage.
+const previews = new Map();
+const KEEP = 4;
+let decoder = null;
+
+function loadPreview(rec) {
+  if (previews.has(rec.id)) {
+    const p = previews.get(rec.id);
+    previews.delete(rec.id); previews.set(rec.id, p); // most recently used
+    return p;
+  }
+  const p = (async () => {
+    const res = await fetch(rec.previewUrl);
+    if (!res.ok) throw new Error(`preview ${res.status}`);
+    const bytes = await res.arrayBuffer();
+    decoder = decoder || new OfflineAudioContext(2, 1, 44100);
+    const buf = await new Promise((ok, fail) => decoder.decodeAudioData(bytes, ok, fail));
+    buf.bpm = estimateBPM(buf);
+    return buf;
+  })();
+  p.catch(() => previews.delete(rec.id));
+  previews.set(rec.id, p);
+  while (previews.size > KEEP) previews.delete(previews.keys().next().value);
+  return p;
+}
+
+/** a song preview from the chart, or a generated set */
+export function loadAudio(rec) {
+  return rec.previewUrl ? loadPreview(rec) : renderRecord(rec);
+}
+
+/** rough tempo from an onset envelope + autocorrelation (for the BPM readout) */
+export function estimateBPM(buf) {
+  const a = buf.getChannelData(0), b = buf.numberOfChannels > 1 ? buf.getChannelData(1) : a;
+  const fps = 200, hop = Math.round(buf.sampleRate / fps), n = Math.floor(a.length / hop);
+  const env = new Float32Array(n);
+  let prev = 0;
+  for (let i = 0; i < n; i++) {
+    let e = 0;
+    for (let k = i * hop, end = k + hop; k < end; k += 4) { const v = a[k] + b[k]; e += v * v; }
+    e = Math.log(1 + e);
+    env[i] = Math.max(0, e - prev); prev = e;
+  }
+  // autocorrelation at each whole lag once, then refine around the peak
+  const lo = Math.floor((60 * fps) / 180), hi = Math.ceil((60 * fps) / 70);
+  const sc = new Float32Array(2 * hi + 3);
+  for (let lag = lo; lag <= 2 * hi + 2 && lag < n - 1; lag++) { let s = 0; for (let i = lag; i < n; i++) s += env[i] * env[i - lag]; sc[lag] = s / (n - lag); }
+  // a beat period should also line up at twice its length (the bar's half-notes),
+  // and tempos near 120 are a priori likelier for chart music
+  const fit = (lag) => (sc[lag] + 0.5 * sc[2 * lag]) * Math.exp(-0.5 * Math.pow(Math.log2((60 * fps) / lag / 120) / 0.7, 2));
+  let bestLag = lo;
+  for (let lag = lo; lag <= hi; lag++) if (fit(lag) > fit(bestLag)) bestLag = lag;
+  const y0 = fit(bestLag - 1) || 0, y1 = fit(bestLag), y2 = fit(bestLag + 1) || 0, den = y0 - 2 * y1 + y2;
+  if (den) bestLag += Math.max(-0.5, Math.min(0.5, (0.5 * (y0 - y2)) / den)); // parabolic peak
+  let bpm = bestLag ? (60 * fps) / bestLag : 120;
+  while (bpm < 80) bpm *= 2;
+  while (bpm > 165) bpm /= 2;
+  return Math.round(bpm * 2) / 2;
+}
+
 function crackleBuffer(ctx, secs, amt) {
   const len = Math.floor(ctx.sampleRate * secs);
   const b = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -81,6 +143,8 @@ export class Deck {
     this.dir = 1; this.src = null;
     this.volume = 0.85;
     this.played = 0;
+    this.loop = true;             // generated sets loop; chart previews play once
+    this.onEnd = null;
   }
 
   init() {
@@ -104,9 +168,10 @@ export class Deck {
   get target() { return this.motorOn ? this.speed * (1 + this.pitch) : 0; }
   get length() { return this.buffer ? this.buffer.duration : 1; }
 
-  setBuffer(buf) {
+  setBuffer(buf, { loop = true } = {}) {
     this.killSource();
     this.buffer = buf; this.rev = null; this.pos = 0; this.played = 0;
+    this.loop = loop; this.ended = false;
   }
 
   reverseBuffer() {
@@ -124,10 +189,11 @@ export class Deck {
     this.killSource();
     if (!this.buffer || !this.ctx) return;
     const L = this.length;
-    const p = ((this.pos % L) + L) % L;
+    const p = this.loop ? ((this.pos % L) + L) % L : Math.min(L - 0.001, Math.max(0, this.pos));
     const s = this.ctx.createBufferSource();
     s.buffer = dir > 0 ? this.buffer : this.reverseBuffer();
-    s.loop = true;
+    s.loop = this.loop;
+    s.onended = () => { if (this.src === s) this.src = null; };
     s.playbackRate.value = Math.max(0.0001, Math.abs(this.rate));
     s.connect(this.needleGain);
     s.start(0, dir > 0 ? p : L - p);
@@ -169,8 +235,17 @@ export class Deck {
     }
     this.pos += this.rate * dt;
     if (this.rate > 0 && this.needle) this.played += this.rate * dt;
+    if (!this.loop) {
+      // a one-shot record: hold at the start, and finish at the run-out
+      if (this.pos < 0) this.pos = 0;
+      if (this.pos >= this.length) {
+        this.pos = this.length;
+        if (this.needle && !this.ended && !this.scratching) { this.ended = true; this.onEnd?.(); }
+      } else this.ended = false;
+    }
 
-    if (this.ctx && this.buffer && this.needle) {
+    const atEdge = !this.loop && (this.pos >= this.length || (this.pos <= 0 && this.rate < 0));
+    if (this.ctx && this.buffer && this.needle && !atEdge) {
       const dir = this.rate < -0.001 ? -1 : 1;
       if (!this.src || dir !== this.dir) this.startSource(dir);
       const now = this.ctx.currentTime, ar = Math.max(0.0001, Math.abs(this.rate));

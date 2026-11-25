@@ -127,7 +127,8 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 .face.front, .face.back { inset: 0; border-radius: 3px; }
 .face.front { transform: translateZ(calc(var(--T) / 2)); box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 .face.back { transform: rotateY(180deg) translateZ(calc(var(--T) / 2)); }
-.face.front svg, .face.back svg { width: 100%; height: 100%; }
+.face.front svg, .face.back svg, .face.front img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.face.front img { background: var(--sp); }
 .face.front::after { /* plastic case glare */
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(115deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 32%, rgba(255,255,255,0) 70%, rgba(255,255,255,.12) 100%);
@@ -240,6 +241,9 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 .ruler-labels span.on { color: var(--accent); }
 .crate-foot { display: flex; justify-content: space-between; gap: 16px; padding: 14px var(--gutter) 0; color: var(--muted); font-size: 10.5px; }
 .crate-foot a { text-decoration: none; }
+/* the shelf fades in once the crate (chart or sets) is ready */
+.shelf-wrap, .crate-info, .ruler { transition: opacity .8s var(--ease); }
+.crate:not(.ready) .shelf-wrap, .crate:not(.ready) .crate-info, .crate:not(.ready) .ruler { opacity: 0; }
 .crate-foot a:hover { color: var(--ink); }
 
 /* ------------------------------------------------------------------ decks */
@@ -324,7 +328,10 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
   box-shadow: 0 6px 22px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.6);
 }
 .record-label { position: absolute; inset: 33.3%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
-.record-label svg { width: 100%; height: 100%; }
+.record-label svg, .record-label img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.record-label img { pointer-events: none; }
+.record-label:has(img)::after { /* spindle hole over song artwork */
+  content: ''; position: absolute; left: 50%; top: 50%; width: 7%; height: 7%; margin: -3.5% 0 0 -3.5%; border-radius: 50%; background: #0b0b0b; }
 .record-sheen {
   position: absolute; inset: 4.545%; border-radius: 50%; pointer-events: none;
   background: conic-gradient(from 20deg, transparent 0 8%, rgba(255,255,255,.16) 12%, transparent 17% 50%, rgba(255,255,255,.12) 62%, transparent 67% 100%);
@@ -383,7 +390,7 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 
 .nowplaying { position: relative; padding-top: 6px; }
 .np-sleeve { width: 46%; max-width: 210px; aspect-ratio: 1; position: relative; margin-bottom: 22px; border-radius: 3px; box-shadow: 0 30px 50px -20px rgba(0,0,0,.8); transition: transform .6s var(--ease); background: var(--night-2); }
-.np-sleeve svg { width: 100%; height: 100%; border-radius: 3px; position: relative; z-index: 1; }
+.np-sleeve svg, .np-sleeve img { width: 100%; height: 100%; border-radius: 3px; position: relative; z-index: 1; display: block; object-fit: cover; }
 .np-sleeve::after { /* empty sleeve: disc is on the platter */ content: ''; position: absolute; top: 4%; bottom: 4%; left: 50%; width: 92%; border-radius: 50%; background: repeating-radial-gradient(circle, #151515 0 1px, #222 1.5px 2.5px); transform: translateX(0); transition: transform .7s var(--ease); }
 .np-sleeve.has-disc::after { transform: translateX(-36%); }
 .np-cat { color: var(--night-muted); margin: 0 0 6px; }
@@ -399,6 +406,20 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 .np-flow { list-style: none; margin: 0 0 22px; padding: 0; counter-reset: f; }
 .np-flow li { counter-increment: f; display: flex; gap: 14px; padding: 9px 0; border-bottom: 1px dashed var(--night-line); font-size: 15px; }
 .np-flow li::before { content: 'A' counter(f); font: 500 11px/1.9 var(--mono); color: var(--accent-2); letter-spacing: .1em; }
+.np-flow.upnext::before { content: 'Up next'; display: block; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--night-muted); margin-bottom: 4px; }
+.np-flow.upnext li::before { display: none; }
+.np-flow.upnext li { padding: 0; }
+.np-flow button { all: unset; cursor: pointer; display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 9px 0; font-size: 15px; color: var(--night-ink); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.np-flow button .mono { color: var(--accent-2); font-size: 11px; letter-spacing: .06em; flex: none; }
+.np-flow button i { font-style: normal; color: var(--night-muted); overflow: hidden; text-overflow: ellipsis; }
+.np-flow button:hover { color: #fff; }
+.np-flow button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.np-blurb em { font-style: normal; color: var(--night-ink); }
+.np-apple { display: inline-flex; align-items: center; gap: 10px; margin: 18px 0 0; padding: 10px 16px; border-radius: 99px; background: #fff; color: #111; text-decoration: none; font-weight: 600; font-size: 14px; transition: transform .25s var(--ease-spring); }
+.np-apple svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.np-apple span { opacity: .5; }
+.np-apple:hover { transform: translateY(-2px); }
+.np-apple[hidden] { display: none; }
 .np-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .vol { display: flex; align-items: center; gap: 10px; margin-left: auto; color: var(--night-muted); font-size: 10px; }
 .vol input { width: 110px; accent-color: var(--accent); }

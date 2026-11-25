@@ -1,21 +1,22 @@
 // The crate: a curved shelf of record cases on a turning platter.
 // Pure CSS 3D — each case is a box with a front cover, back cover and spines.
 
-import { coverSVG, backSVG } from './covers.js';
+import { coverSVG, backSVG, songBackSVG } from './covers.js';
 
-const COPIES = 3;
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const mod = (n, m) => ((n % m) + m) % m;
 // per-slot pose at integer offsets from the selection
 const spinFor = (d) => (d === 0 ? 0 : d === -1 ? 64 : d === 1 ? 116 : 90);
 const popFor = (d, W) => (d === 0 ? W * 0.32 : Math.abs(d) === 1 ? W * 0.06 : 0);
 
 export class Shelf {
-  constructor({ records, stage, ring, ledge, wrap, tip, onChange, onSpin }) {
+  constructor({ records, stage, ring, ledge, wrap, tip, onChange, onSpin, start = 0 }) {
     Object.assign(this, { records, stage, ring, ledge, wrap, tip, onChange, onSpin });
     this.N = records.length;
-    this.M = this.N * COPIES;
+    // small crates are repeated so the shelf always looks full
+    this.M = this.N * Math.max(1, Math.ceil(30 / this.N));
     // pos: where the shelf is drawn (float, in slots); target: where it's heading.
-    this.pos = this.target = this.N * 4 + 4; // start on NZ-005 (index 4)
+    this.pos = this.target = start;
     this.vel = 0;
     this.open = this.openTarget = this.openVel = 0;
     this.lastSel = this.sel;
@@ -43,19 +44,22 @@ export class Shelf {
       el.className = 'case';
       el.dataset.slot = j;
       el.setAttribute('role', 'button');
-      el.setAttribute('aria-label', `${r.cat} ${r.title} — ${r.genre}, ${r.bpm} BPM`);
+      const song = r.kind === 'song';
+      el.setAttribute('aria-label', song ? `${r.cat} ${r.title} by ${r.artist}` : `${r.cat} ${r.title} — ${r.genre}, ${r.bpm} BPM`);
       el.tabIndex = -1;
       el.style.setProperty('--sp', r.pal.bg);
       el.style.setProperty('--tx', r.pal.tx);
       el.style.setProperty('--lbl', r.pal.fg);
       el.style.setProperty('--vl', r.pal.vinyl);
-      const spine = `<span class="spine-cat">${r.cat.replace('NZ-', '')}</span>
-        <span class="spine-title">${r.title}<small>${r.genre}</small></span>
+      const spine = `<span class="spine-cat">${esc(r.cat.replace(/^NZ-|^#/, ''))}</span>
+        <span class="spine-title">${esc(r.title)}<small>${esc(song ? r.artist : r.genre)}</small></span>
         <span class="spine-dot"></span>`;
+      const front = song ? `<img src="${esc(r.art)}" data-hi="${esc(r.art.replace('/300x300bb', '/600x600bb'))}" alt="" decoding="async" draggable="false">` : j < this.N ? coverSVG(r) : '';
+      const back = song ? songBackSVG(r) : j < this.N ? backSVG(r) : '';
       el.innerHTML = `<div class="case-box">
           <div class="disc"></div>
-          <div class="face front">${j < this.N ? coverSVG(r) : ''}</div>
-          <div class="face back">${j < this.N ? backSVG(r) : ''}</div>
+          <div class="face front">${front}</div>
+          <div class="face back">${back}</div>
           <div class="face spine l">${spine}</div>
           <div class="face spine r">${spine}</div>
           <div class="face top"></div>
@@ -66,6 +70,7 @@ export class Shelf {
     }
     // later copies reuse the first copy's artwork (keeps the DOM lighter)
     for (let j = this.N; j < this.M; j++) {
+      if (this.records[j % this.N].kind === 'song') break;
       const src = this.slots[j % this.N];
       this.slots[j].querySelector('.front').innerHTML = src.querySelector('.front').innerHTML;
       this.slots[j].querySelector('.back').innerHTML = src.querySelector('.back').innerHTML;
@@ -93,7 +98,7 @@ export class Shelf {
 
     // tangential position of the slot at each integer offset from the selection
     const ext = (spin) => W * Math.abs(Math.cos((spin * Math.PI) / 180)) + T * Math.abs(Math.sin((spin * Math.PI) / 180));
-    const half = this.M / 2 + 1;
+    const half = Math.floor(this.M / 2) + 1;
     this.X = new Map([[0, 0]]);
     for (const side of [1, -1]) {
       let x = 0, prev = 0;
@@ -112,7 +117,7 @@ export class Shelf {
     const { W, R, M, X } = this;
     // centre the sleeve + disc pair while the record is out
     this.ring.style.transform = `translateX(${(-this.open * W * 0.3).toFixed(1)}px) translateZ(${R}px)`;
-    const half = M / 2;
+    const half = Math.floor(M / 2);
     const lerp = (a, b, f) => a + (b - a) * f;
     const near = Math.round(this.pos);
     for (let j = 0; j < M; j++) {
@@ -130,7 +135,12 @@ export class Shelf {
       const tf = `rotateY(${theta.toFixed(3)}deg) translateZ(${z.toFixed(1)}px) rotateY(${spin.toFixed(2)}deg)`;
       if (tf !== el.tf) { el.style.transform = tf; el.tf = tf; }
       const isSel = mod(j, M) === mod(near, M);
-      if (isSel !== el.isSel) { el.classList.toggle('selected', isSel); el.tabIndex = isSel ? 0 : -1; el.isSel = isSel; }
+      if (isSel !== el.isSel) {
+        el.classList.toggle('selected', isSel); el.tabIndex = isSel ? 0 : -1; el.isSel = isSel;
+        // the cover facing you gets the sharp artwork
+        const img = isSel && el.querySelector('.front img[data-hi]');
+        if (img) { const hi = img.dataset.hi; img.removeAttribute('data-hi'); const pre = new Image(); pre.onload = () => { img.src = hi; }; pre.src = hi; }
+      }
     }
   }
 
@@ -194,6 +204,14 @@ export class Shelf {
     this.pulling = on;
     this.selectedEl().classList.toggle('pulling', on);
     this.setOpen(on ? 1 : 0);
+  }
+
+  /** update a record's spine colours (e.g. once its artwork colour is known) */
+  recolor(r) {
+    for (let j = r.index; j < this.M; j += this.N) {
+      const el = this.slots[j];
+      el.style.setProperty('--sp', r.pal.bg); el.style.setProperty('--tx', r.pal.tx); el.style.setProperty('--lbl', r.pal.fg);
+    }
   }
 
   selectedEl() { return this.slots[mod(this.sel, this.M)]; }
@@ -279,7 +297,7 @@ export class Shelf {
     const c = this.caseFromEvent(e);
     if (!c) return;
     const j = +c.dataset.slot;
-    const half = this.M / 2;
+    const half = Math.floor(this.M / 2);
     const d = mod(j - this.sel + half, this.M) - half;
     if (d === 0) this.onSpin?.(this.record);
     else this.go(d);
@@ -301,7 +319,7 @@ export class Shelf {
     }
     this.untilt();
     if (!this.pulling) this.setOpen(0);
-    this.tip.textContent = `${r.cat.replace('NZ-', '')} · ${r.title}`;
+    this.tip.textContent = r.kind === 'song' ? `${r.cat} · ${r.title} — ${r.artist}` : `${r.cat.replace('NZ-', '')} · ${r.title}`;
     this.tip.style.left = `${e.clientX - box.left}px`;
     this.tip.style.top = `${e.clientY - box.top}px`;
     this.tip.classList.add('show');

@@ -24,7 +24,8 @@ python3 -m http.server 8000
 | What | Where |
 | --- | --- |
 | Booking email, form backend, social links | `js/config.js` |
-| The records (titles, genres, BPM, colours, blurbs) | `js/records.js` |
+| The live chart (on/off, country) | `js/config.js` |
+| The generated sets (titles, genres, BPM, colours, blurbs) | `js/records.js` |
 | About text, services, process steps | `index.html` |
 | Your photo | Add `assets/portrait.jpg` (square works best). A styled placeholder shows until you do. |
 | Colours and fonts | CSS variables at the top of `css/styles.css` |
@@ -32,6 +33,15 @@ python3 -m http.server 8000
 ### Booking form delivery
 
 With `formEndpoint` empty, submitting opens the visitor's email app with the request pre-filled and addressed to `email`. To receive requests without relying on that, create a form endpoint (for example Formspree, Basin or Getform) and paste its URL into `formEndpoint`. The form will then POST JSON to it.
+
+### The chart crate
+
+By default the crate shows Apple's live **iTunes Top Songs** chart (`js/chart.js`). Each song is a record with its real cover art. Dropping it on the turntable streams Apple's 30-second preview, with scratching, pitch and spin-down. When a preview ends, the next song plays. Each song links to Apple Music, and the page credits "Previews courtesy of Apple Music".
+
+- Change the store country, or turn the chart off, in `js/config.js` (`chart`).
+- Previews are kept in memory only, four at a time, and are never saved to disk or browser storage.
+- If the chart can't be reached, the site falls back to the generated sets below.
+- **Apple's terms:** Apple's preview terms say previews are for promoting the songs (with a store link and credit), streamed only, and not for "independent entertainment value". Using them on a turntable you can scratch goes beyond that, and Apple can ask for previews to be removed. If that happens, set `chart.enabled` to `false`.
 
 ### Records and sound
 
