@@ -3,7 +3,7 @@
 A one-page site for booking a DJ, built around a record crate and a working turntable.
 
 - **The crate (hero):** a curved 3D shelf of record cases. Browse with the arrows, the keyboard, a drag or the tempo ruler. Click the selected sleeve (or **Spin it**) and the disc slides out and goes to the decks.
-- **The decks:** a turntable that plays every record live. The music is synthesised in the browser, so there are no audio files. It has motor spin-up and spin-down, 33/45, a ±8% pitch fader, a cue lever and scratching (drag the vinyl, backwards too).
+- **The booth:** two turntables and a two-channel mixer. Each deck has start/stop, 33/45, a ±8% pitch fader, a cue lever and scratching (drag the vinyl, backwards too). The mixer has trim, 3-band EQ (with full cut), a channel fader and a level meter per channel, plus a crossfader and master volume. Everything is generated in the browser or streamed, with no audio files.
 - **About:** liner notes and a portrait.
 - **Services:** three booking formats and a "how it works" tracklist.
 - **Booking:** an order-slip style request form.
@@ -38,7 +38,7 @@ With `formEndpoint` empty, submitting opens the visitor's email app with the req
 
 By default the crate shows Apple's live **iTunes Top Songs** chart (`js/chart.js`). Each song is a record with its real cover art. Dropping it on the turntable streams Apple's 30-second preview, with scratching, pitch and spin-down. When a preview ends, the next song plays. Each song links to Apple Music, and the page credits "Previews courtesy of Apple Music".
 
-- **Auto-mix:** about 8 seconds before a preview ends, the next song starts underneath it and crossfades in. When the two tempos are within ±8%, the incoming song is sped up or slowed down to match, and started so its kick and bass hits land on the current song's. It then takes over the turntable without a gap, and the pitch fader shows the speed it's running at. When the tempos are too far apart, it does a plain 5-second blend instead. The **Auto-mix** button turns it off, and the choice is remembered on that device.
+- **Auto-mix:** while one deck plays, the next chart song is dropped onto the other deck. About 11 seconds before the end, that deck's pitch fader moves to match the tempo (within ±8%), its platter starts with the record held, and the needle drops. Then the record is released so its kick and bass hits land on the current song's, and the crossfader slides across over 8 seconds. The decks swap roles and the finished deck gets the following record. When tempos are too far apart it does a plain 5-second blend instead. The **Auto** button on the mixer turns it off, and the choice is remembered on that device. Touching the crossfader takes over from the automation.
 - **Genres:** buttons above the crate switch between Apple's genre charts (All, Pop, Hip-Hop, R&B, Dance, Electronic, Country, Latin, K-Pop, Rock, Alternative, Reggae, Jazz). Whatever is playing keeps playing, and the auto-mix carries on into the new genre. Each visitor's choice is remembered on their device. Edit the list in `GENRES` in `js/chart.js`.
 - Change the store country or the starting genre, or turn the chart off, in `js/config.js` (`chart`).
 - Previews are kept in memory only, four at a time, and are never saved to disk or browser storage.

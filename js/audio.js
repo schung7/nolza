@@ -225,40 +225,29 @@ export class Deck {
     this.needle = false;
     this.scratching = false; this.hand = 0;
     this.dir = 1; this.src = null;
-    this.volume = 0.85;
     this.played = 0;
     this.loop = true;             // generated sets loop; chart previews play once
     this.onEnd = null;
   }
 
-  init() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return this.ctx; }
-    const ctx = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    this.out = ctx.createGain(); this.out.gain.value = this.volume;
-    this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 256; this.analyser.smoothingTimeConstant = 0.78;
-    this.out.connect(this.analyser).connect(ctx.destination);
+  /** connect this deck to an audio context and a mixer channel input */
+  attach(ctx, dest) {
+    if (this.ctx) return;
+    this.ctx = ctx;
     this.needleGain = ctx.createGain(); this.needleGain.gain.value = 0;
     this.tone = ctx.createBiquadFilter(); this.tone.type = 'lowpass'; this.tone.frequency.value = 20000;
-    // deck A: needle → crossfade → cartridge tone → out
-    this.fadeA = ctx.createGain();
-    this.needleGain.connect(this.fadeA).connect(this.tone).connect(this.out);
-    // deck B: the next record, mixed in underneath before it takes over the platter
-    this.mixGain = ctx.createGain(); this.mixGain.gain.value = 0;
-    this.mixGain.connect(this.out);
+    this.needleGain.connect(this.tone).connect(dest);
     // live surface noise
-    const cb = crackleBuffer(ctx, 4, 0.16);
-    const cs = ctx.createBufferSource(); cs.buffer = cb; cs.loop = true;
+    const cs = ctx.createBufferSource(); cs.buffer = crackleBuffer(ctx, 4, 0.16); cs.loop = true;
     this.crackle = ctx.createGain(); this.crackle.gain.value = 0;
-    cs.connect(this.crackle).connect(this.out); cs.start();
-    this.freq = new Uint8Array(this.analyser.frequencyBinCount);
-    return ctx;
+    cs.connect(this.crackle).connect(dest); cs.start();
+    this.thumpOut = dest;
   }
 
   get target() { return this.motorOn ? this.speed * (1 + this.pitch) : 0; }
   get length() { return this.buffer ? this.buffer.duration : 1; }
 
   setBuffer(buf, { loop = true } = {}) {
-    this.cancelMix();
     this.killSource();
     this.buffer = buf; this.rev = null; this.pos = 0; this.played = 0;
     this.loop = loop; this.ended = false;
@@ -290,6 +279,12 @@ export class Deck {
     this.src = s; this.dir = dir;
   }
 
+  /** jump to a position (seconds), restarting the source there if it's playing */
+  seek(pos) {
+    this.pos = pos;
+    if (this.src) this.startSource(this.dir > 0 ? 1 : -1);
+  }
+
   setNeedle(down) {
     if (!this.ctx) return;
     this.needle = down;
@@ -305,10 +300,9 @@ export class Deck {
     const ctx = this.ctx, t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
     o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.12);
     g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.connect(g).connect(this.out); o.start(t); o.stop(t + 0.2);
+    o.connect(g).connect(this.thumpOut); o.start(t); o.stop(t + 0.2);
   }
 
-  setVolume(v) { this.volume = v; if (this.out) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03); }
 
   /** advance physics; returns degrees the record and platter moved */
   tick(dt) {
@@ -330,12 +324,12 @@ export class Deck {
       if (this.pos < 0) this.pos = 0;
       if (this.pos >= this.length) {
         this.pos = this.length;
-        if (this.needle && !this.ended && !this.scratching && !this.mix) { this.ended = true; this.onEnd?.(); }
+        if (this.needle && !this.ended && !this.scratching) { this.ended = true; this.onEnd?.(); }
       } else this.ended = false;
     }
 
     const atEdge = !this.loop && (this.pos >= this.length || (this.pos <= 0 && this.rate < 0));
-    if (this.ctx && this.buffer && this.needle && !atEdge) {
+    if (this.ctx && this.buffer && this.needle && !atEdge && Math.abs(this.rate) > 0.0005) {
       const dir = this.rate < -0.001 ? -1 : 1;
       if (!this.src || dir !== this.dir) this.startSource(dir);
       const now = this.ctx.currentTime, ar = Math.max(0.0001, Math.abs(this.rate));
@@ -346,69 +340,80 @@ export class Deck {
     } else if (this.crackle) {
       this.crackle.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
     }
-    // deck B follows the motor (and the pitch fader), not the hand on deck A
-    const m = this.mix;
-    if (m && this.ctx) {
-      const r = Math.max(0.01, Math.abs(this.motor) * m.ratio);
-      m.pos += r * dt;
-      m.src.playbackRate.setTargetAtTime(r, this.ctx.currentTime, 0.05);
-      m.progress = Math.min(1, (this.ctx.currentTime - m.t0) / m.fade);
-      if (m.progress >= 1 && !m.done) { m.done = true; this.onMixDone?.(); }
-    }
     const degPerSec = 200; // 33⅓ rpm
     return { rec: this.rate * degPerSec * dt, plat: this.motor * degPerSec * dt };
   }
 
-  /** start the next record underneath this one and crossfade over `fade` seconds */
-  startMix(buf, { ratio = 1, offset = 0, fade = 8 } = {}) {
-    if (!this.ctx || this.mix) return false;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const s = ctx.createBufferSource();
-    s.buffer = buf;
-    s.playbackRate.value = Math.max(0.01, Math.abs(this.motor) * ratio);
-    s.connect(this.mixGain);
-    s.start(t, Math.max(0, offset));
-    // equal-power crossfade
-    const N = 64, up = new Float32Array(N), down = new Float32Array(N);
-    for (let i = 0; i < N; i++) { const x = i / (N - 1); up[i] = Math.sin((x * Math.PI) / 2); down[i] = Math.cos((x * Math.PI) / 2); }
-    this.mixGain.gain.cancelScheduledValues(t); this.mixGain.gain.setValueCurveAtTime(up, t, fade);
-    this.fadeA.gain.cancelScheduledValues(t); this.fadeA.gain.setValueCurveAtTime(down, t, fade);
-    this.mix = { buf, src: s, ratio, pos: Math.max(0, offset), t0: t, fade, progress: 0, done: false };
-    return true;
+}
+
+// --------------------------------------------------------------- mixer
+// Two-channel DJ mixer: trim + 3-band EQ + channel fader per channel, a
+// constant-power crossfader, a master level and per-channel meters.
+const db = (v) => Math.pow(10, v / 20);
+
+export class Mixer {
+  constructor() {
+    this.ctx = null;
+    this.state = {
+      A: { trim: 0, high: 0, mid: 0, low: 0, fader: 0.85 },
+      B: { trim: 0, high: 0, mid: 0, low: 0, fader: 0.85 },
+      xf: 0, master: 0.85,
+    };
   }
 
-  /** the mixed-in record takes over the platter, with no gap in the sound */
-  adoptMix() {
-    const m = this.mix;
-    if (!m) return null;
-    const t = this.ctx.currentTime;
-    this.killSource();
-    m.src.disconnect();
-    m.src.connect(this.needleGain);
-    this.mixGain.gain.cancelScheduledValues(t); this.mixGain.gain.setValueAtTime(0, t);
-    this.fadeA.gain.cancelScheduledValues(t); this.fadeA.gain.setValueAtTime(1, t);
-    this.buffer = m.buf; this.rev = null; this.pos = m.pos; this.played = 0;
-    this.src = m.src; this.dir = 1; this.loop = false; this.ended = false;
-    m.src.onended = () => { if (this.src === m.src) this.src = null; };
-    // keep the matched tempo: it's now this record's pitch
-    this.rate *= m.ratio; this.motor *= m.ratio;
-    this.pitch = Math.max(-0.08, Math.min(0.08, (1 + this.pitch) * m.ratio - 1));
-    this.mix = null;
-    return { pitch: this.pitch };
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return this.ctx; }
+    const ctx = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.master = ctx.createGain();
+    this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 256; this.analyser.smoothingTimeConstant = 0.78;
+    this.master.connect(this.analyser).connect(ctx.destination);
+    this.freq = new Uint8Array(this.analyser.frequencyBinCount);
+    this.ch = {};
+    for (const k of ['A', 'B']) {
+      const c = (this.ch[k] = {});
+      c.input = ctx.createGain();
+      c.low = ctx.createBiquadFilter(); c.low.type = 'lowshelf'; c.low.frequency.value = 220;
+      c.mid = ctx.createBiquadFilter(); c.mid.type = 'peaking'; c.mid.frequency.value = 1000; c.mid.Q.value = 0.8;
+      c.high = ctx.createBiquadFilter(); c.high.type = 'highshelf'; c.high.frequency.value = 3500;
+      c.fader = ctx.createGain(); c.xf = ctx.createGain();
+      c.meter = ctx.createAnalyser(); c.meter.fftSize = 512; c.meter.smoothingTimeConstant = 0;
+      c.buf = new Float32Array(c.meter.fftSize);
+      c.input.connect(c.low).connect(c.mid).connect(c.high).connect(c.fader).connect(c.xf).connect(this.master);
+      c.fader.connect(c.meter);
+      c.peak = 0;
+    }
+    for (const k of ['A', 'B']) { const st = this.state[k]; this.setTrim(k, st.trim); ['high', 'mid', 'low'].forEach((b) => this.setEQ(k, b, st[b])); this.setFader(k, st.fader); }
+    this.setCrossfader(this.state.xf); this.setMaster(this.state.master);
+    return ctx;
   }
 
-  /** abandon a mix in progress (record changed, stopped, needle lifted…) */
-  cancelMix() {
-    const m = this.mix;
-    if (!m) return;
-    const t = this.ctx.currentTime;
-    this.mixGain.gain.cancelScheduledValues(t); this.mixGain.gain.setTargetAtTime(0, t, 0.06);
-    this.fadeA.gain.cancelScheduledValues(t); this.fadeA.gain.setTargetAtTime(1, t, 0.06);
-    try { m.src.stop(t + 0.4); } catch (e) {}
-    this.mix = null;
+  input(k) { return this.ch[k].input; }
+  _set(param, v) { if (this.ctx) param.setTargetAtTime(v, this.ctx.currentTime, 0.015); }
+  setTrim(k, dB) { this.state[k].trim = dB; if (this.ch) this._set(this.ch[k].input.gain, db(dB)); }
+  setEQ(k, band, dB) { this.state[k][band] = dB; if (this.ch) this._set(this.ch[k][band].gain, dB); }
+  setFader(k, v) { this.state[k].fader = v; if (this.ch) this._set(this.ch[k].fader.gain, v * v); }
+  setCrossfader(x) {
+    this.state.xf = x;
+    if (!this.ch) return;
+    this._set(this.ch.A.xf.gain, Math.cos((x * Math.PI) / 2));
+    this._set(this.ch.B.xf.gain, Math.sin((x * Math.PI) / 2));
+  }
+  setMaster(v) { this.state.master = v; if (this.master) this._set(this.master.gain, v); }
+
+  /** channel level 0..1 with meter ballistics (fast attack, slow release) */
+  level(k, dt) {
+    const c = this.ch?.[k];
+    if (!c) return 0;
+    c.meter.getFloatTimeDomainData(c.buf);
+    let pk = 0;
+    for (let i = 0; i < c.buf.length; i++) { const v = Math.abs(c.buf[i]); if (v > pk) pk = v; }
+    const dbfs = 20 * Math.log10(pk + 1e-6);
+    const lvl = Math.max(0, Math.min(1, (dbfs + 36) / 36));   // -36 dBFS … 0 dBFS
+    c.peak = lvl > c.peak ? lvl : Math.max(lvl, c.peak - dt * 1.2);
+    return c.peak;
   }
 
-  levels() {
+  spectrum() {
     if (!this.analyser) return null;
     this.analyser.getByteFrequencyData(this.freq);
     return this.freq;
