@@ -62,7 +62,7 @@ function turntableHTML(id) {
         <rect x="-128" y="-26" width="62" height="52" rx="8" fill="url(#armMetal${id})"/><rect x="-110" y="-26" width="4" height="52" fill="#555" opacity=".6"/>
         <rect x="-66" y="-9" width="70" height="18" rx="4" fill="#2b2b2c"/>
         <rect x="0" y="-8" width="452" height="16" rx="8" fill="url(#armMetal${id})"/>
-        <g transform="translate(452 0) rotate(22)"><rect x="-8" y="-13" width="78" height="26" rx="4" fill="#1b1b1c"/><rect x="2" y="-11" width="40" height="22" rx="2" fill="#2d2d2f"/><rect x="50" y="-12" width="8" height="24" fill="#e5502f"/><path d="M 64 -13 L 92 -26 L 96 -20 L 70 -6 Z" fill="url(#armMetal${id})"/></g>
+        <g transform="translate(452 0) rotate(22)"><rect x="-8" y="-13" width="78" height="26" rx="4" fill="#1b1b1c"/><rect x="2" y="-11" width="40" height="22" rx="2" fill="#2d2d2f"/><rect x="50" y="-12" width="8" height="24" style="fill: var(--accent)"/><path d="M 64 -13 L 92 -26 L 96 -20 L 70 -6 Z" fill="url(#armMetal${id})"/></g>
         <circle cx="0" cy="0" r="24" fill="url(#baseMetal${id})" stroke="#2a2a2a" stroke-width="3"/><circle cx="0" cy="0" r="7" fill="#1a1a1a"/>
       </g></g>
     </svg>
