@@ -140,7 +140,13 @@ onScroll();
 const io = new IntersectionObserver((entries) => entries.forEach((e) => {
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
 }), { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.reveal, .portrait-sleeve').forEach((el) => io.observe(el));
+document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+// About: roll the record out once the sleeve is properly on screen
+const sleeveIO = new IntersectionObserver(([e]) => {
+  if (e.intersectionRatio >= 0.6) { e.target.classList.add('in'); sleeveIO.disconnect(); }
+}, { threshold: [0, 0.6] });
+sleeveIO.observe(document.querySelector('.portrait-sleeve'));
 new IntersectionObserver(([e]) => document.querySelector('.book').classList.toggle('in', e.isIntersecting)).observe(document.querySelector('.book'));
 
 initBooking(RECORDS);
