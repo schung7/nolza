@@ -117,7 +117,7 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
   position: absolute; left: calc(var(--W) / -2); top: calc(var(--H) / -2);
   width: var(--W); height: var(--H);
   transform-style: preserve-3d;
-  transition: transform .9s var(--ease);
+  will-change: transform;
   cursor: pointer;
 }
 .case-box { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .5s var(--ease); }
@@ -183,14 +183,12 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
       #9e9d98 calc(100% - var(--band-in)),
       transparent calc(100% - var(--band-in) + 1px));
 }
-.shelf-ledge::after { /* perforations that turn with the platter */
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  background: repeating-conic-gradient(from var(--ledge-rot, 0deg), #2b2b29 0 .18deg, transparent .18deg .5deg);
+.ledge-dots { /* perforated lip of the shelf */
+  position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(#2b2b29 0 .18deg, transparent .18deg .5deg);
   -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - var(--band-in) - 8px), #000 calc(100% - var(--band-in) - 7px), #000 calc(100% - var(--band-in) - 3px), transparent calc(100% - var(--band-in) - 2px));
   mask: radial-gradient(circle closest-side, transparent calc(100% - var(--band-in) - 8px), #000 calc(100% - var(--band-in) - 7px), #000 calc(100% - var(--band-in) - 3px), transparent calc(100% - var(--band-in) - 2px));
-  transition: --ledge-rot .9s var(--ease);
 }
-@property --ledge-rot { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
 
 .spine-tip {
   position: absolute; z-index: 5; pointer-events: none; left: 0; top: 0;

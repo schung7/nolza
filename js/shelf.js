@@ -5,22 +5,34 @@ import { coverSVG, backSVG } from './covers.js';
 
 const COPIES = 3;
 const mod = (n, m) => ((n % m) + m) % m;
+// per-slot pose at integer offsets from the selection
+const spinFor = (d) => (d === 0 ? 0 : d === -1 ? 64 : d === 1 ? 116 : 90);
+const popFor = (d, W) => (d === 0 ? W * 0.32 : Math.abs(d) === 1 ? W * 0.06 : 0);
 
 export class Shelf {
   constructor({ records, stage, ring, ledge, wrap, tip, onChange, onSpin }) {
     Object.assign(this, { records, stage, ring, ledge, wrap, tip, onChange, onSpin });
     this.N = records.length;
     this.M = this.N * COPIES;
-    this.sel = this.N * 4 + 4; // start on NZ-005 (index 4)
+    // pos: where the shelf is drawn (float, in slots); target: where it's heading.
+    this.pos = this.target = this.N * 4 + 4; // start on NZ-005 (index 4)
+    this.vel = 0;
+    this.lastSel = this.sel;
+    this.dragging = false;
+    this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.slots = [];
-    this.lastD = [];
+    this.dots = document.createElement('div');
+    this.dots.className = 'ledge-dots';
+    this.ledge.appendChild(this.dots);
     this.build();
     this.measure();
-    this.layout(true);
+    this.render();
     this.bind();
-    window.addEventListener('resize', () => { this.measure(); this.layout(true); });
+    window.addEventListener('resize', () => { this.measure(); this.render(); });
   }
 
+  /** the record the shelf is on (or heading to) */
+  get sel() { return Math.round(this.target); }
   get record() { return this.records[mod(this.sel, this.N)]; }
 
   build() {
@@ -78,50 +90,78 @@ export class Shelf {
     this.ledgeW = R + W + 200;
     this.ledge.style.left = this.ledge.style.top = `${-this.ledgeW}px`;
     this.ledge.style.width = this.ledge.style.height = `${this.ledgeW * 2}px`;
-  }
 
-  /** compute transform for every slot from the current selection */
-  layout(instant = false) {
-    const { W, T, R, M } = this;
-    const half = M / 2;
+    // tangential position of the slot at each integer offset from the selection
     const ext = (spin) => W * Math.abs(Math.cos((spin * Math.PI) / 180)) + T * Math.abs(Math.sin((spin * Math.PI) / 180));
-    const spinFor = (d) => (d === 0 ? 0 : d === -1 ? 64 : d === 1 ? 116 : 90);
-    // cumulative tangential positions outward from the selection
-    const pos = new Map([[0, 0]]);
+    const half = this.M / 2 + 1;
+    this.X = new Map([[0, 0]]);
     for (const side of [1, -1]) {
       let x = 0, prev = 0;
       for (let k = 1; k <= half; k++) {
         const d = side * k;
-        const gap = k === 1 ? W * 0.1 : 1.5;
-        x += ext(spinFor(prev)) / 2 + gap + ext(spinFor(d)) / 2;
-        pos.set(d, side * x);
+        x += ext(spinFor(prev)) / 2 + (k === 1 ? W * 0.1 : 1.5) + ext(spinFor(d)) / 2;
+        this.X.set(d, side * x);
         prev = d;
       }
     }
-    this.slots.forEach((el, j) => {
-      let d = mod(j - this.sel + half, M) - half; // -half .. half-1
-      const x = pos.get(d) ?? 0;
+    this.dragStep = T * 1.45;
+  }
+
+  /** draw every case for the current (fractional) shelf position */
+  render() {
+    const { W, R, M, X } = this;
+    const half = M / 2;
+    const lerp = (a, b, f) => a + (b - a) * f;
+    const near = Math.round(this.pos);
+    for (let j = 0; j < M; j++) {
+      const el = this.slots[j];
+      const d = mod(j - this.pos + half, M) - half;      // fractional offset, -half .. half
+      const i0 = Math.floor(d), f = d - i0;
+      const x = lerp(X.get(i0) ?? 0, X.get(i0 + 1) ?? 0, f);
       const theta = (-x / R) * (180 / Math.PI);
-      const z = -R + (d === 0 ? W * 0.32 : Math.abs(d) === 1 ? W * 0.06 : 0);
-      const spin = spinFor(d);
-      const jumped = this.lastD[j] !== undefined && Math.abs(this.lastD[j] - d) > 2;
-      if (instant || jumped) el.style.transition = 'none';
-      el.style.transform = `rotateY(${theta.toFixed(3)}deg) translateZ(${z.toFixed(1)}px) rotateY(${spin}deg)`;
-      const nearCam = R * (1 - Math.cos((theta * Math.PI) / 180)) + W;
-      el.style.visibility = nearCam > this.persp * 0.8 ? 'hidden' : '';
-      el.classList.toggle('selected', d === 0);
-      el.tabIndex = d === 0 ? 0 : -1;
-      if (instant || jumped) { el.offsetWidth; el.style.transition = ''; }
-      this.lastD[j] = d;
-    });
-    this.ring.style.setProperty('--ledge-rot', `${(this.sel * this.T * 1.1 / R) * (180 / Math.PI)}deg`);
+      const z = -R + lerp(popFor(i0, W), popFor(i0 + 1, W), f);
+      const spin = lerp(spinFor(i0), spinFor(i0 + 1), f);
+      const hide = R * (1 - Math.cos((theta * Math.PI) / 180)) + W > this.persp * 0.8 || Math.abs(d) > half - 1;
+      if (hide) { if (!el.hidden3d) { el.style.visibility = 'hidden'; el.hidden3d = true; } continue; }
+      if (el.hidden3d) { el.style.visibility = ''; el.hidden3d = false; }
+      const tf = `rotateY(${theta.toFixed(3)}deg) translateZ(${z.toFixed(1)}px) rotateY(${spin.toFixed(2)}deg)`;
+      if (tf !== el.tf) { el.style.transform = tf; el.tf = tf; }
+      const isSel = mod(j, M) === mod(near, M);
+      if (isSel !== el.isSel) { el.classList.toggle('selected', isSel); el.tabIndex = isSel ? 0 : -1; el.isSel = isSel; }
+    }
+  }
+
+  /** spring the shelf toward its target, one frame at a time */
+  animate() {
+    if (this.raf) return;
+    let last = performance.now();
+    const step = (t) => {
+      const dt = Math.min(0.034, (t - last) / 1000); last = t;
+      if (!this.dragging) {
+        const k = this.reduced ? 900 : 110, c = 2 * Math.sqrt(k);   // critically damped
+        this.vel += (k * (this.target - this.pos) - c * this.vel) * dt;
+        this.vel = Math.max(-40, Math.min(40, this.vel));
+        this.pos += this.vel * dt;
+      }
+      this.render();
+      const settled = !this.dragging && Math.abs(this.target - this.pos) < 0.0006 && Math.abs(this.vel) < 0.002;
+      if (settled) { this.pos = this.target; this.vel = 0; this.render(); this.raf = 0; return; }
+      this.raf = requestAnimationFrame(step);
+    };
+    this.raf = requestAnimationFrame(step);
+  }
+
+  emit() {
+    if (this.sel === this.lastSel) return;
+    this.lastSel = this.sel;
+    this.onChange?.(this.record);
   }
 
   go(delta) {
     if (!delta) return;
-    this.sel += delta;
-    this.layout();
-    this.onChange?.(this.record);
+    this.target = Math.round(this.target) + delta;
+    this.emit();
+    this.animate();
   }
 
   goToRecord(index) {
@@ -141,22 +181,29 @@ export class Shelf {
 
   bind() {
     const wrap = this.wrap;
-    let down = null, moved = false, acc = 0;
+    let down = null, moved = false;
 
     wrap.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
-      down = { x: e.clientX, y: e.clientY, last: e.clientX, id: e.pointerId };
-      moved = false; acc = 0;
+      down = { x: e.clientX, id: e.pointerId, startPos: this.pos, samples: [{ t: performance.now(), p: this.pos }] };
+      moved = false;
     });
     wrap.addEventListener('pointermove', (e) => {
       if (down && e.pointerId === down.id) {
-        const dx = e.clientX - down.last;
-        if (!moved && Math.abs(e.clientX - down.x) > 6) { moved = true; wrap.classList.add('dragging'); wrap.setPointerCapture(e.pointerId); this.hideTip(); }
+        const dx = e.clientX - down.x;
+        if (!moved && Math.abs(dx) > 6) {
+          moved = true; this.dragging = true; this.vel = 0;
+          wrap.classList.add('dragging'); wrap.setPointerCapture(e.pointerId); this.hideTip(); this.untilt();
+          down.x = e.clientX; down.startPos = this.pos;
+        }
         if (moved) {
-          acc += dx; down.last = e.clientX;
-          const step = this.T * 1.6;
-          while (acc <= -step) { acc += step; this.go(1); }
-          while (acc >= step) { acc -= step; this.go(-1); }
+          this.pos = down.startPos - (e.clientX - down.x) / this.dragStep;
+          this.target = this.pos;
+          const now = performance.now();
+          down.samples.push({ t: now, p: this.pos });
+          while (down.samples.length > 2 && now - down.samples[0].t > 100) down.samples.shift();
+          this.emit();
+          this.animate();
         }
         return;
       }
@@ -165,20 +212,38 @@ export class Shelf {
     const end = (e) => {
       if (!down) return;
       wrap.classList.remove('dragging');
-      if (!moved) this.click(e);
+      if (moved) {
+        // fling: carry the finger's speed, then settle on the nearest record
+        const s0 = down.samples[0], s1 = down.samples[down.samples.length - 1];
+        const v = s1.t > s0.t ? ((s1.p - s0.p) / (s1.t - s0.t)) * 1000 : 0;
+        this.dragging = false;
+        this.vel = v;
+        this.target = Math.round(this.pos + v * 0.16);
+        this.emit();
+        this.animate();
+      } else this.click(e);
       down = null;
     };
     wrap.addEventListener('pointerup', end);
-    wrap.addEventListener('pointercancel', () => { down = null; wrap.classList.remove('dragging'); });
+    wrap.addEventListener('pointercancel', () => {
+      if (down && moved) { this.dragging = false; this.target = Math.round(this.pos); this.emit(); this.animate(); }
+      down = null; wrap.classList.remove('dragging');
+    });
     wrap.addEventListener('pointerleave', () => { this.hideTip(); this.untilt(); });
 
-    let wheelAcc = 0, wheelT = 0;
+    // trackpad / horizontal wheel: glide continuously, then snap
+    let snapT, dir = 0;
     wrap.addEventListener('wheel', (e) => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return; // let vertical scroll through
       e.preventDefault();
-      wheelAcc += e.deltaX;
-      const now = performance.now();
-      if (Math.abs(wheelAcc) > 40 && now - wheelT > 90) { this.go(Math.sign(wheelAcc)); wheelAcc = 0; wheelT = now; }
+      const unit = e.deltaMode === 1 ? 16 : 1;
+      this.target += (e.deltaX * unit) / (this.dragStep * 1.6);
+      dir = Math.sign(e.deltaX);
+      this.emit();
+      this.animate();
+      clearTimeout(snapT);
+      // settle on a record, leaning the way the gesture was going
+      snapT = setTimeout(() => { this.target = Math.round(this.target + dir * 0.3); this.emit(); this.animate(); }, 160);
     }, { passive: false });
   }
 
