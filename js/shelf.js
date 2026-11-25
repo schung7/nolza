@@ -17,6 +17,7 @@ export class Shelf {
     // pos: where the shelf is drawn (float, in slots); target: where it's heading.
     this.pos = this.target = this.N * 4 + 4; // start on NZ-005 (index 4)
     this.vel = 0;
+    this.open = this.openTarget = this.openVel = 0;
     this.lastSel = this.sel;
     this.dragging = false;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -86,7 +87,6 @@ export class Shelf {
     ring.setProperty('--W', `${W}px`); ring.setProperty('--H', `${W}px`); ring.setProperty('--T', `${T}px`); ring.setProperty('--R', `${R}px`);
     ring.setProperty('--band-out', `${W * 0.5 + 190}px`);
     ring.setProperty('--band-in', `${W * 1.5 + 230 + 26}px`);
-    ring.transform = `translateZ(${R}px)`;
     this.ledgeW = R + W + 200;
     this.ledge.style.left = this.ledge.style.top = `${-this.ledgeW}px`;
     this.ledge.style.width = this.ledge.style.height = `${this.ledgeW * 2}px`;
@@ -110,6 +110,8 @@ export class Shelf {
   /** draw every case for the current (fractional) shelf position */
   render() {
     const { W, R, M, X } = this;
+    // centre the sleeve + disc pair while the record is out
+    this.ring.style.transform = `translateX(${(-this.open * W * 0.3).toFixed(1)}px) translateZ(${R}px)`;
     const half = M / 2;
     const lerp = (a, b, f) => a + (b - a) * f;
     const near = Math.round(this.pos);
@@ -117,7 +119,8 @@ export class Shelf {
       const el = this.slots[j];
       const d = mod(j - this.pos + half, M) - half;      // fractional offset, -half .. half
       const i0 = Math.floor(d), f = d - i0;
-      const x = lerp(X.get(i0) ?? 0, X.get(i0 + 1) ?? 0, f);
+      // when the disc slides out of the selected sleeve, the cases to its right make room
+      const x = lerp(X.get(i0) ?? 0, X.get(i0 + 1) ?? 0, f) + this.open * W * 0.66 * Math.min(1, Math.max(0, d));
       const theta = (-x / R) * (180 / Math.PI);
       const z = -R + lerp(popFor(i0, W), popFor(i0 + 1, W), f);
       const spin = lerp(spinFor(i0), spinFor(i0 + 1), f);
@@ -143,12 +146,25 @@ export class Shelf {
         this.vel = Math.max(-40, Math.min(40, this.vel));
         this.pos += this.vel * dt;
       }
+      {
+        const k = this.reduced ? 900 : 150, c = 2 * Math.sqrt(k);
+        this.openVel += (k * (this.openTarget - this.open) - c * this.openVel) * dt;
+        this.open += this.openVel * dt;
+      }
       this.render();
-      const settled = !this.dragging && Math.abs(this.target - this.pos) < 0.0006 && Math.abs(this.vel) < 0.002;
-      if (settled) { this.pos = this.target; this.vel = 0; this.render(); this.raf = 0; return; }
+      const settled = !this.dragging && Math.abs(this.target - this.pos) < 0.0006 && Math.abs(this.vel) < 0.002
+        && Math.abs(this.openTarget - this.open) < 0.001 && Math.abs(this.openVel) < 0.002;
+      if (settled) { this.pos = this.target; this.vel = 0; this.open = this.openTarget; this.openVel = 0; this.render(); this.raf = 0; return; }
       this.raf = requestAnimationFrame(step);
     };
     this.raf = requestAnimationFrame(step);
+  }
+
+  /** 0 = shelf closed, 1 = room for the disc to slide fully out */
+  setOpen(v) {
+    if (v === this.openTarget) return;
+    this.openTarget = v;
+    this.animate();
   }
 
   emit() {
@@ -171,6 +187,13 @@ export class Shelf {
     if (d > this.N / 2) d -= this.N;
     if (d < -this.N / 2) d += this.N;
     this.go(d);
+  }
+
+  /** slide the selected record out of its sleeve (or back in) */
+  pull(on) {
+    this.pulling = on;
+    this.selectedEl().classList.toggle('pulling', on);
+    this.setOpen(on ? 1 : 0);
   }
 
   selectedEl() { return this.slots[mod(this.sel, this.M)]; }
@@ -229,7 +252,7 @@ export class Shelf {
       if (down && moved) { this.dragging = false; this.target = Math.round(this.pos); this.emit(); this.animate(); }
       down = null; wrap.classList.remove('dragging');
     });
-    wrap.addEventListener('pointerleave', () => { this.hideTip(); this.untilt(); });
+    wrap.addEventListener('pointerleave', () => { this.hideTip(); this.untilt(); if (!this.pulling) this.setOpen(0); });
 
     // trackpad / horizontal wheel: glide continuously, then snap
     let snapT, dir = 0;
@@ -264,11 +287,12 @@ export class Shelf {
 
   hover(e) {
     const c = this.caseFromEvent(e);
-    if (!c) { this.hideTip(); this.untilt(); return; }
+    if (!c) { this.hideTip(); this.untilt(); if (!this.pulling) this.setOpen(0); return; }
     const r = this.records[+c.dataset.slot % this.N];
     const box = this.wrap.getBoundingClientRect();
     if (c.classList.contains('selected')) {
       this.hideTip();
+      if (!this.pulling) this.setOpen(0.18);
       const cb = c.getBoundingClientRect();
       const px = (e.clientX - cb.left) / cb.width - 0.5, py = (e.clientY - cb.top) / cb.height - 0.5;
       c.querySelector('.case-box').style.transform = `rotateY(${px * 14}deg) rotateX(${-py * 10}deg)`;
@@ -276,6 +300,7 @@ export class Shelf {
       return;
     }
     this.untilt();
+    if (!this.pulling) this.setOpen(0);
     this.tip.textContent = `${r.cat.replace('NZ-', '')} · ${r.title}`;
     this.tip.style.left = `${e.clientX - box.left}px`;
     this.tip.style.top = `${e.clientY - box.top}px`;

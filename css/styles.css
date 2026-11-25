@@ -163,7 +163,7 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
   transition: transform .8s var(--ease);
 }
 .case.selected:hover .disc { transform: translateX(14%) rotate(30deg); }
-.case.pulling .disc { transform: translateX(62%) rotate(140deg) !important; }
+.case.pulling .disc { transform: translateX(62%) rotate(140deg) !important; transition-delay: .1s; }
 
 .shelf-ledge {
   position: absolute; left: calc(var(--R) * -1 - 200px); top: calc(var(--R) * -1 - 200px);
