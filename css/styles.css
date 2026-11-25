@@ -12,11 +12,11 @@
   --muted: #8a8598;
   --line: #2a2636;
   /* the accent: change --accent-rgb (and its tint/shade) to re-colour the site */
-  --accent-rgb: 255 90 46;
+  --accent-rgb: 214 176 108;    /* champagne gold */
   --accent: rgb(var(--accent-rgb));
-  --accent-2: #ff9466;          /* light tint, for small accent text */
-  --accent-deep: var(--accent-deep);       /* hover shade */
-  --on-accent: #ffffff;         /* text on accent-coloured buttons */
+  --accent-2: #ecd7ab;          /* light tint, for small accent text */
+  --accent-deep: #b38c45;       /* hover shade */
+  --on-accent: #1a1408;         /* text on accent-coloured buttons */
   --neon-pink: #ff2fa8;
   --neon-violet: #7d5cff;
   --neon-cyan: #2ee6ff;
@@ -25,7 +25,7 @@
   --night-line: #26222f;
   --night-ink: #f4f1ec;
   --night-muted: #8a8598;
-  --glow-accent: 0 0 18px rgb(var(--accent-rgb) / .55), 0 0 46px rgb(var(--accent-rgb) / .3);
+  --glow-accent: 0 0 26px rgb(var(--accent-rgb) / .16);  /* a soft halo, not neon */
   color-scheme: dark;
 
   --sans: 'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -114,7 +114,7 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
 .hero-lede .ko { color: var(--ink); }
 .hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: clamp(28px, 4vw, 44px); }
 .btn-primary, .btn-ghost { display: inline-flex; align-items: center; gap: 12px; border-radius: 99px; text-decoration: none; font-weight: 600; font-size: 16.5px; transition: transform .3s var(--ease-spring), background .3s, color .3s, box-shadow .3s; }
-.btn-primary { background: var(--accent); color: var(--on-accent); padding: 13px 24px 13px 13px; box-shadow: 0 16px 34px -14px rgb(var(--accent-rgb) / .9), 0 0 26px rgb(var(--accent-rgb) / .45); }
+.btn-primary { background: var(--accent); color: var(--on-accent); padding: 13px 24px 13px 13px; box-shadow: 0 14px 30px -16px rgb(var(--accent-rgb) / .6); }
 .btn-primary:hover { transform: translateY(-2px); background: var(--accent-deep); }
 .btn-disc { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #fff 0 12%, #111 14% 32%, #2a2a2a 33% 100%); }
 .btn-primary:hover .btn-disc { animation: spin .9s linear infinite; }
@@ -160,7 +160,7 @@ body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out i
   position: absolute; z-index: 3; right: 6%; bottom: 8%; width: 23%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; text-align: center;
   background: #0c0a12; color: var(--accent); font-size: clamp(10px, 1vw, 13px); line-height: 1.25; letter-spacing: .12em; transform: rotate(-12deg);
   border: 1.5px solid var(--accent); text-shadow: var(--glow-accent);
-  box-shadow: 0 14px 30px -12px rgba(0,0,0,.8), 0 0 22px rgb(var(--accent-rgb) / .45), inset 0 0 14px rgb(var(--accent-rgb) / .25); animation: sticker 1s 1.4s var(--ease-spring) both;
+  box-shadow: 0 14px 30px -12px rgba(0,0,0,.8), inset 0 0 12px rgb(var(--accent-rgb) / .12); animation: sticker 1s 1.4s var(--ease-spring) both;
 }
 @keyframes sticker { from { transform: rotate(-40deg) scale(.4); opacity: 0; } }
 .hero-scroll { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); color: var(--muted); text-decoration: none; font-size: 10.5px; }
@@ -199,7 +199,7 @@ body::after {
 .book { background: radial-gradient(900px 600px at 0% 100%, rgba(125, 92, 255, .16), transparent 70%), radial-gradient(700px 500px at 100% 0%, rgb(var(--accent-rgb) / .1), transparent 70%), var(--night) !important; }
 .section-title { text-shadow: 0 0 40px rgba(125, 92, 255, .18); }
 .nav-cta { box-shadow: 0 0 18px rgb(var(--accent-rgb) / .0); transition: box-shadow .3s; }
-.nav-cta:hover { box-shadow: 0 0 22px rgb(var(--accent-rgb) / .55); }
+.nav-cta:hover { box-shadow: 0 0 22px rgb(var(--accent-rgb) / .3); }
 
 /* ------------------------------------------------------------------ reviews + venues */
 .reviews { background: var(--night); color: var(--night-ink); padding: clamp(80px, 10vw, 130px) 0 clamp(70px, 9vw, 110px); overflow: hidden; overflow: clip; }

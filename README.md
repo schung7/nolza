@@ -41,7 +41,7 @@ Edit `js/reviews.js`. Each review has a quote, a name, the event type, optional 
 | Reviews and venues you've played | `js/reviews.js` |
 | Top section, About text, services, process steps | `index.html` |
 | Your photo | Add `assets/portrait.jpg` (square works best). A styled placeholder shows until you do. |
-| Colours and fonts | CSS variables at the top of `css/styles.css` |
+| Colours and fonts | CSS variables at the top of `css/styles.css` (the accent is one setting: `--accent-rgb`, plus its tint, hover shade and button text colour) |
 
 ### Booking form delivery
 
@@ -64,13 +64,13 @@ Each record's `style` picks the beat and instrument pattern (`lofi`, `boombap`, 
 
 ## Brand
 
-The logo is **놀자.**: 놀자 set in Pretendard Black with an orange full stop. The files in `assets/brand/` are outlined, so they don't need the font installed:
+The logo is **놀자.**: 놀자 set in Pretendard Black with a champagne-gold full stop. The files in `assets/brand/` are outlined, so they don't need the font installed:
 
 - `nolza-logo.svg` / `.png`: dark logo for light backgrounds
 - `nolza-logo-light.svg` / `.png`: light logo for dark backgrounds
 - `nolza-logo-mono.svg`: one colour, for print or engraving
 - `nolza-icon.svg`, `nolza-icon-512.png`, `apple-touch-icon.png`, `favicon-32.png`: the 놀. app icon
-- `nolza-icon-orange.svg` / `-512.png`: orange variant for profile pictures
+- `nolza-icon-gold.svg` / `-512.png`: gold variant for profile pictures
 
 On the site, the full stop pulses on the beat while a record is playing.
 
