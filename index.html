@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nolza — DJ for weddings, parties &amp; late nights</title>
+  <meta name="description" content="Nolza is a DJ for weddings, private parties, corporate events and club nights. Browse the crate, drop a record on the turntable and book a set." />
+  <meta name="theme-color" content="#e9e8e4" />
+  <meta property="og:title" content="Nolza — DJ" />
+  <meta property="og:description" content="Pick a record from the crate, drop the needle, then book a set." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23151515'/%3E%3Ccircle cx='32' cy='32' r='11' fill='%23e5502f'/%3E%3Ccircle cx='32' cy='32' r='2.5' fill='%23151515'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <a class="skip" href="#book">Skip to booking</a>
+
+  <!-- ============================== HEADER -->
+  <header class="topbar" id="top">
+    <a class="brand" href="#top" aria-label="Nolza home">
+      <span class="brand-disc" aria-hidden="true"></span>
+      <span class="brand-name">Nolza</span>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="mono brand-sub">DJ · Selector</span>
+    </a>
+    <div class="onplatter mono" aria-live="polite">
+      <span class="dot" id="platterDot"></span>
+      <span class="op-label">On the platter</span>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span id="platterNow">Needle up</span>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="#crate">Crate</a>
+      <a href="#decks">Decks</a>
+      <a href="#about">About</a>
+      <a href="#formats">Services</a>
+      <a class="nav-cta" href="#book">Book</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============================== CRATE (hero) -->
+    <section class="crate" id="crate" aria-label="The crate — pick a set">
+      <div class="crate-intro">
+        <p class="mono kicker"><span class="dot dot-accent"></span> DJ for weddings, parties &amp; late nights</p>
+        <h1 class="crate-title">Pick a record. <em>Let’s play.</em></h1>
+      </div>
+
+      <div class="shelf-wrap" id="shelfWrap">
+        <div class="shelf-stage" id="shelfStage">
+          <div class="shelf-ring" id="shelfRing">
+            <div class="shelf-ledge" id="shelfLedge" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="spine-tip mono" id="spineTip" aria-hidden="true"></div>
+      </div>
+
+      <div class="crate-info">
+        <button class="round-btn" id="prevRec" aria-label="Previous record">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+        </button>
+        <div class="crate-meta" aria-live="polite">
+          <p class="mono meta-line"><span class="dot" id="metaDot"></span> <span id="metaCat">NZ-001</span> — <span id="metaGenre">Genre</span></p>
+          <h2 class="meta-title" id="metaTitle">Title</h2>
+          <p class="meta-sub" id="metaSub">BPM</p>
+          <button class="spin-btn" id="spinBtn">
+            <span class="spin-ico" aria-hidden="true"></span> Spin it on the decks
+          </button>
+        </div>
+        <button class="round-btn" id="nextRec" aria-label="Next record">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+        </button>
+      </div>
+
+      <div class="ruler" id="ruler" role="slider" tabindex="0" aria-label="Browse by tempo (BPM)" aria-valuemin="80" aria-valuemax="180">
+        <div class="ruler-ticks" id="rulerTicks"></div>
+        <div class="ruler-marker" id="rulerMarker"><span></span></div>
+        <div class="ruler-labels mono" id="rulerLabels"></div>
+      </div>
+
+      <div class="crate-foot mono">
+        <span>© <span class="yr"></span> Nolza Sound</span>
+        <span class="hint">← → to browse · Enter to spin · drag the shelf</span>
+        <span><a href="#book">Booking open</a></span>
+      </div>
+    </section>
+
+    <!-- ============================== DECKS -->
+    <section class="decks" id="decks" aria-label="The turntable">
+      <div class="decks-head">
+        <p class="mono kicker light"><span class="dot dot-accent"></span> Side A — The decks</p>
+        <h2 class="section-title">Drop the needle.</h2>
+        <p class="lede">Every record in the crate plays live, right here. Ride the pitch, switch to 45, or grab the vinyl and scratch it.</p>
+      </div>
+
+      <div class="decks-grid">
+        <div class="tt-wrap">
+          <div class="turntable" id="turntable">
+            <div class="tt-light" aria-hidden="true"></div>
+            <div class="tt-brand mono" aria-hidden="true"><b>NOLZA</b> DD-1200 · Direct Drive</div>
+
+            <div class="platter" id="platter">
+              <div class="platter-edge" id="platterEdge"></div>
+              <div class="slipmat"><span class="mono">NOLZA SOUND · LET'S PLAY · 놀자 ·</span></div>
+              <div class="record" id="record" aria-hidden="true">
+                <div class="record-grooves"></div>
+                <div class="record-label" id="recordLabel"></div>
+              </div>
+              <div class="record-sheen" aria-hidden="true"></div>
+              <div class="spindle" aria-hidden="true"></div>
+              <div class="tt-empty mono" id="ttEmpty">
+                <span>No record on the platter</span>
+                <button class="chip" id="randomRec">Drop a random one</button>
+              </div>
+            </div>
+
+            <svg class="tonearm" id="tonearm" viewBox="0 0 1000 760" aria-hidden="true">
+              <defs>
+                <linearGradient id="armMetal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#f4f4f2" /><stop offset=".5" stop-color="#b9bab6" /><stop offset="1" stop-color="#7d7e7a" />
+                </linearGradient>
+                <radialGradient id="baseMetal" cx=".35" cy=".35">
+                  <stop offset="0" stop-color="#f2f2ef" /><stop offset=".7" stop-color="#9c9d99" /><stop offset="1" stop-color="#5d5e5b" />
+                </radialGradient>
+                <filter id="armShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="10" dy="16" stdDeviation="7" flood-color="#000" flood-opacity=".55" />
+                </filter>
+              </defs>
+              <!-- arm rest -->
+              <g transform="translate(850 694)">
+                <rect x="-26" y="-12" width="52" height="24" rx="6" fill="#0d0d0e" />
+                <rect x="-18" y="-6" width="36" height="12" rx="4" fill="#2a2a2c" />
+              </g>
+              <!-- base -->
+              <circle cx="850" cy="170" r="70" fill="#0f0f10" />
+              <circle cx="850" cy="170" r="58" fill="url(#baseMetal)" />
+              <circle cx="850" cy="170" r="40" fill="#151516" />
+              <g id="armGroup" filter="url(#armShadow)">
+                <g id="armLift">
+                  <!-- counterweight -->
+                  <rect x="-128" y="-26" width="62" height="52" rx="8" fill="url(#armMetal)" />
+                  <rect x="-110" y="-26" width="4" height="52" fill="#555" opacity=".6" />
+                  <rect x="-66" y="-9" width="70" height="18" rx="4" fill="#2b2b2c" />
+                  <!-- arm tube -->
+                  <rect x="0" y="-8" width="452" height="16" rx="8" fill="url(#armMetal)" />
+                  <!-- headshell -->
+                  <g transform="translate(452 0) rotate(22)">
+                    <rect x="-8" y="-13" width="78" height="26" rx="4" fill="#1b1b1c" />
+                    <rect x="2" y="-11" width="40" height="22" rx="2" fill="#2d2d2f" />
+                    <rect x="50" y="-12" width="8" height="24" fill="#e5502f" />
+                    <path d="M 64 -13 L 92 -26 L 96 -20 L 70 -6 Z" fill="url(#armMetal)" />
+                  </g>
+                  <circle cx="0" cy="0" r="24" fill="url(#baseMetal)" stroke="#2a2a2a" stroke-width="3" />
+                  <circle cx="0" cy="0" r="7" fill="#1a1a1a" />
+                </g>
+              </g>
+            </svg>
+
+            <!-- controls on the plinth -->
+            <div class="tt-controls">
+              <button class="tt-start" id="startBtn" aria-pressed="false">
+                <span class="led" aria-hidden="true"></span><span class="mono">Start<span class="ss"> · Stop</span></span>
+              </button>
+              <div class="tt-speed" role="group" aria-label="Speed">
+                <button class="tt-key active" data-speed="33" aria-pressed="true">33</button>
+                <button class="tt-key" data-speed="45" aria-pressed="false">45</button>
+              </div>
+              <button class="tt-key tt-cue" id="cueBtn" aria-label="Lift or lower the needle">Cue</button>
+            </div>
+
+            <div class="pitch">
+              <span class="mono pitch-l">+8</span>
+              <input type="range" id="pitch" min="-8" max="8" step="0.1" value="0" aria-label="Pitch (percent)" />
+              <span class="mono pitch-l">−8</span>
+              <span class="mono pitch-val" id="pitchVal">0.0%</span>
+            </div>
+          </div>
+          <p class="tt-hint mono">Drag the vinyl to scratch · double-click the pitch to reset</p>
+        </div>
+
+        <aside class="nowplaying" aria-live="polite">
+          <div class="np-sleeve" id="npSleeve"></div>
+          <p class="mono np-cat"><span class="dot dot-accent" id="npDot"></span> <span id="npCat">—</span></p>
+          <h3 class="np-title" id="npTitle">Nothing spinning yet</h3>
+          <p class="np-genre" id="npGenre">Pick a record from the crate above.</p>
+
+          <div class="np-readout mono">
+            <div><span class="lbl">BPM</span><span class="val" id="npBpm">000.0</span></div>
+            <div><span class="lbl">RPM</span><span class="val" id="npRpm">00.0</span></div>
+            <div><span class="lbl">Time</span><span class="val" id="npTime">0:00</span></div>
+          </div>
+          <canvas class="np-viz" id="viz" height="80" aria-hidden="true"></canvas>
+
+          <p class="np-blurb" id="npBlurb"></p>
+          <ol class="np-flow" id="npFlow"></ol>
+
+          <div class="np-actions">
+            <button class="chip" id="npPrev" aria-label="Load previous record">← Prev</button>
+            <button class="chip" id="npNext" aria-label="Load next record">Next →</button>
+            <label class="vol mono">Vol <input type="range" id="volume" min="0" max="1" step="0.01" value="0.85" aria-label="Volume" /></label>
+          </div>
+          <a class="np-book" href="#book" id="npBook">Want this vibe at your event? <span>Book it →</span></a>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================== ABOUT -->
+    <section class="about" id="about" aria-label="About">
+      <div class="about-grid">
+        <div class="about-visual reveal">
+          <div class="portrait-sleeve">
+            <div class="portrait-disc" aria-hidden="true"></div>
+            <div class="portrait">
+              <img src="assets/portrait.jpg" alt="Portrait of Nolza behind the decks" onerror="this.remove()" />
+              <div class="portrait-fallback" aria-hidden="true">
+                <span class="pf-k">놀자</span>
+                <span class="mono pf-s">NOLZA SOUND · SELECTOR</span>
+              </div>
+            </div>
+          </div>
+          <p class="mono caption">Fig. 1 — the selector, mid-transition.</p>
+        </div>
+
+        <div class="about-copy">
+          <p class="mono kicker reveal"><span class="dot dot-accent"></span> Side B — Liner notes</p>
+          <h2 class="section-title reveal">Records for rooms that want to&nbsp;move.</h2>
+          <p class="big reveal"><span class="ko">놀자</span> <em>(nol-ja)</em> is Korean for <strong>“let’s play.”</strong> It’s also the whole job description.</p>
+          <p class="reveal">I build every set the way you’d sequence an album: a patient Side A that warms the room up, and a Side B that doesn’t let anyone sit back down. Weddings, birthdays, company parties, club nights — I read the room, take the requests that work, and quietly lose the ones that don’t.</p>
+          <p class="reveal">Before your event we’ll talk through the people, the must-plays and the absolutely-nots. On the night, you get a DJ who shows up early, sounds great, and keeps the floor full without ever making it about the DJ.</p>
+
+          <dl class="credits reveal">
+            <div><dt>Selector</dt><dd>Nolza</dd></div>
+            <div><dt>Formats</dt><dd>Weddings · Private · Corporate · Clubs</dd></div>
+            <div><dt>Range</dt><dd>82 → 174 BPM, lo-fi to drum &amp; bass</dd></div>
+            <div><dt>Also on the mic</dt><dd>MC duties, toasts &amp; announcements</dd></div>
+            <div><dt>Rider</dt><dd>One table, one outlet, one glass of water</dd></div>
+            <div><dt>Travels</dt><dd>Anywhere with a dance floor</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== FORMATS / SERVICES -->
+    <section class="formats" id="formats" aria-label="Services">
+      <div class="formats-head">
+        <p class="mono kicker"><span class="dot dot-accent"></span> The formats</p>
+        <h2 class="section-title">Pick your pressing.</h2>
+        <p class="lede">Three ways to book, each one built around your crowd. Every booking includes a planning call, a custom do-not-play list and pro sound.</p>
+      </div>
+
+      <div class="format-cards">
+        <article class="format reveal" data-event="Wedding">
+          <div class="format-sleeve" data-cover="NZ-003"><div class="format-disc"></div></div>
+          <p class="mono format-type">LP · Full length</p>
+          <h3>Weddings</h3>
+          <p>Ceremony to last dance, one seamless record. I’ll MC the moments that matter and keep everyone from grandparents to groomsmen on the floor.</p>
+          <ul>
+            <li>Ceremony, cocktail hour &amp; reception</li>
+            <li>MC, wireless mics &amp; announcements</li>
+            <li>First dance edits &amp; custom intros</li>
+            <li>Planning call + shared request list</li>
+          </ul>
+          <button class="format-cta" data-book="Wedding">Book a wedding <span>→</span></button>
+        </article>
+
+        <article class="format reveal" data-event="Private party">
+          <div class="format-sleeve" data-cover="NZ-009"><div class="format-disc"></div></div>
+          <p class="mono format-type">EP · Private &amp; corporate</p>
+          <h3>Parties &amp; Events</h3>
+          <p>Birthdays, launches, holiday parties and galas. Background-perfect when people are talking, peak-time when they’re ready.</p>
+          <ul>
+            <li>Sound for intimate rooms to 300+ guests</li>
+            <li>Brand-friendly, clean-edit playlists</li>
+            <li>Dance-floor lighting add-on</li>
+            <li>Flexible 2–6 hour sets</li>
+          </ul>
+          <button class="format-cta" data-book="Private party">Book a party <span>→</span></button>
+        </article>
+
+        <article class="format reveal" data-event="Club / bar">
+          <div class="format-sleeve" data-cover="NZ-011"><div class="format-disc"></div></div>
+          <p class="mono format-type">12″ · Club mix</p>
+          <h3>Clubs &amp; Residencies</h3>
+          <p>Warm-ups, peak slots and weekly residencies. Genre-specific sets that respect the room and the headliner.</p>
+          <ul>
+            <li>House, disco, techno, open format</li>
+            <li>Warm-up &amp; closing specialists</li>
+            <li>CDJ / turntable / controller ready</li>
+            <li>Promo mix available on request</li>
+          </ul>
+          <button class="format-cta" data-book="Club / bar">Book a club night <span>→</span></button>
+        </article>
+      </div>
+
+      <div class="process">
+        <p class="mono kicker"><span class="dot"></span> How a booking spins up</p>
+        <ol class="tracklist">
+          <li class="reveal"><span class="mono tn">01</span><span class="tt">Send the request</span><span class="td">Tell me the date, the place and the crowd.</span><span class="mono tl">2:00</span></li>
+          <li class="reveal"><span class="mono tn">02</span><span class="tt">Intro call</span><span class="td">We talk vibe, must-plays and do-not-plays.</span><span class="mono tl">20:00</span></li>
+          <li class="reveal"><span class="mono tn">03</span><span class="tt">Lock the date</span><span class="td">Simple agreement and a deposit holds your night.</span><span class="mono tl">5:00</span></li>
+          <li class="reveal"><span class="mono tn">04</span><span class="tt">We play</span><span class="td">I arrive early, set up, and you go dance.</span><span class="mono tl">∞</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============================== BOOK -->
+    <section class="book" id="book" aria-label="Book a set">
+      <div class="book-grid">
+        <div class="book-copy">
+          <p class="mono kicker light"><span class="dot dot-accent"></span> Booking open</p>
+          <h2 class="section-title">Book a set.</h2>
+          <p class="lede">Tell me about your event and I’ll reply within two days with availability and a quote.</p>
+          <div class="contact-lines">
+            <a class="mono" id="mailLink" href="mailto:">—</a>
+            <a class="mono" href="#" data-social="instagram">Instagram</a>
+            <a class="mono" href="#" data-social="soundcloud">SoundCloud</a>
+          </div>
+          <div class="book-disc" aria-hidden="true"><div class="bd-label"></div></div>
+        </div>
+
+        <form class="slip" id="bookingForm" novalidate>
+          <div class="slip-head mono">
+            <span>Pressing order</span><span id="slipNo">No. 0001</span>
+          </div>
+
+          <fieldset class="field">
+            <legend class="mono">Event type</legend>
+            <div class="chips" id="eventChips">
+              <label><input type="radio" name="event" value="Wedding" required /> <span>Wedding</span></label>
+              <label><input type="radio" name="event" value="Private party" /> <span>Private party</span></label>
+              <label><input type="radio" name="event" value="Corporate" /> <span>Corporate</span></label>
+              <label><input type="radio" name="event" value="Club / bar" /> <span>Club / bar</span></label>
+              <label><input type="radio" name="event" value="Something else" /> <span>Something else</span></label>
+            </div>
+          </fieldset>
+
+          <div class="row">
+            <label class="field"><span class="mono">Your name</span><input name="name" autocomplete="name" required /></label>
+            <label class="field"><span class="mono">Email</span><input name="email" type="email" autocomplete="email" required /></label>
+          </div>
+          <div class="row">
+            <label class="field"><span class="mono">Phone <i>(optional)</i></span><input name="phone" type="tel" autocomplete="tel" /></label>
+            <label class="field"><span class="mono">Event date</span><input name="date" type="date" required /></label>
+          </div>
+          <div class="row">
+            <label class="field"><span class="mono">Venue / city</span><input name="venue" required /></label>
+            <label class="field"><span class="mono">Guests</span>
+              <select name="guests">
+                <option>Under 50</option><option selected>50–150</option><option>150–300</option><option>300+</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="mono">Set length — <b id="hoursOut">4 hrs</b></span>
+            <input type="range" name="hours" id="hours" min="1" max="10" step="1" value="4" />
+          </label>
+
+          <fieldset class="field">
+            <legend class="mono">Pull from the crate <i>(pick any)</i></legend>
+            <div class="chips small" id="vibeChips"></div>
+          </fieldset>
+
+          <label class="field"><span class="mono">Anything else?</span>
+            <textarea name="message" rows="4" placeholder="First-dance song, must-plays, absolutely-nots, timeline…"></textarea>
+          </label>
+
+          <div class="slip-foot">
+            <p class="form-msg" id="formMsg" role="status"></p>
+            <button class="submit" type="submit"><span class="submit-disc" aria-hidden="true"></span><span class="submit-txt">Send request</span></button>
+          </div>
+
+          <div class="slip-done" id="slipDone" aria-hidden="true">
+            <div class="stamp mono">Pressed<br /><small id="stampDate"></small></div>
+            <h3>Request received.</h3>
+            <p>Thanks — I’ll be in touch within two days. In the meantime, go spin something.</p>
+            <button type="button" class="chip" id="slipAgain">Send another</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>Let’s play <i>●</i> <span class="ko">놀자</span> <i>●</i> Nolza Sound <i>●</i> </span>
+        <span>Let’s play <i>●</i> <span class="ko">놀자</span> <i>●</i> Nolza Sound <i>●</i> </span>
+      </div>
+    </div>
+    <div class="footer-row mono">
+      <span>© <span class="yr"></span> Nolza Sound</span>
+      <span><a href="#crate">Crate</a> · <a href="#decks">Decks</a> · <a href="#about">About</a> · <a href="#book">Book</a></span>
+      <span><a href="#top">Back to top ↑</a></span>
+    </div>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
