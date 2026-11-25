@@ -672,8 +672,30 @@ export class DeckUI {
       this.mixerView.paintMeters(dt);
     }
     this.mixerView.paintStatus(this.mixStatus());
+    this.driveLights();
     this.drawViz();
     requestAnimationFrame((tt) => this.frame(tt));
+  }
+
+  /** the page's club lighting breathes with the bass coming out of the mixer */
+  driveLights() {
+    const f = this.mixer.ctx ? this.mixer.spectrum() : null;
+    let target = 0;
+    if (f) {
+      // flash on the kicks: how far the bass jumps above its recent average, plus a little overall level
+      let sum = 0; for (let i = 1; i < 7; i++) sum += f[i];
+      const bass = sum / 6 / 255;
+      this.bassAvg = this.bassAvg === undefined ? bass : this.bassAvg + (bass - this.bassAvg) * 0.04;
+      const punch = clamp((bass - this.bassAvg) / 0.1, 0, 1);
+      target = clamp((bass - 0.3) / 0.6, 0, 1) * 0.3 + punch * 0.7;
+    }
+    const e = (this.energy || 0) + (target - (this.energy || 0)) * (target > (this.energy || 0) ? 0.6 : 0.12);
+    this.energy = e;
+    if (Math.abs(e - (this.lastEnergy ?? -1)) < 0.02) return;
+    this.lastEnergy = e;
+    // data-pulse="base gain": opacity = base + energy × gain (opacity only, so it's cheap)
+    this.lightTargets = this.lightTargets || [...document.querySelectorAll('[data-pulse]')].map((el) => { const [b, g] = el.dataset.pulse.split(' ').map(Number); return { el, b, g }; });
+    for (const t of this.lightTargets) t.el.style.opacity = (t.b + e * t.g).toFixed(3);
   }
 
   drawViz() {

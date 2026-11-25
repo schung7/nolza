@@ -16,7 +16,7 @@ export const RECORDS = [
   {
     cat: 'NZ-002', title: 'Block Party Physics', genre: 'Hip-Hop Classics', bpm: 92,
     style: 'boombap', key: 43, motif: 'blocks',
-    pal: { bg: '#f4c430', fg: '#141414', ac: '#e5502f', tx: '#141414', vinyl: '#141414' },
+    pal: { bg: '#f4c430', fg: '#141414', ac: '#e5502f', tx: '#141414', vinyl: '#141414', chip: '#f4c430' },
     blurb: 'Golden-era breaks, crowd-call hooks and the records everybody knows the second verse to.',
     flow: ['Breaks & classic loops', 'Sing-along hooks', 'Back-to-back bangers'],
   },
@@ -79,7 +79,7 @@ export const RECORDS = [
   {
     cat: 'NZ-011', title: 'Concrete Bloom', genre: 'Techno', bpm: 132,
     style: 'techno', key: 45, motif: 'tunnel',
-    pal: { bg: '#d7d7d2', fg: '#141414', ac: '#c6ff3d', tx: '#141414', vinyl: '#141414' },
+    pal: { bg: '#d7d7d2', fg: '#141414', ac: '#c6ff3d', tx: '#141414', vinyl: '#141414', chip: '#c6ff3d' },
     blurb: 'Hypnotic, driving and a little acid. For warehouse nights and fashion-week afters.',
     flow: ['Hypnotic openers', 'Acid lines', 'Peak-time pressure'],
   },
