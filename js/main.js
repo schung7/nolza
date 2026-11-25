@@ -55,6 +55,7 @@ const deckUI = new DeckUI({
     $('platterDot').classList.toggle('live', playing);
     $('npDot').classList.toggle('live', playing);
     document.body.classList.toggle('playing', playing);
+    if (rec) document.body.style.setProperty('--beat', `${60 / rec.bpm}s`);
     document.querySelector('.decks').style.setProperty('--glow', playing ? 1 : 0.5);
     shelf.markOnDeck(rec);
   },

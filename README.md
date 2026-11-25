@@ -37,6 +37,18 @@ With `formEndpoint` empty, submitting opens the visitor's email app with the req
 
 Each record's `style` picks the beat and instrument pattern (`lofi`, `boombap`, `rnb`, `disco`, `nudisco`, `afro`, `deephouse`, `house`, `openformat`, `anthem`, `techno`, `dnb`). `key` is the root note as a MIDI number, and `motif` picks the generated cover art (`waves`, `blocks`, `rings`, `mirrorball`, `sun`, `kente`, `grid`, `halftone`, `type`, `eq`, `tunnel`, `spiral`).
 
+## Brand
+
+The logo is **놀자.**: 놀자 set in Pretendard Black with an orange full stop. The files in `assets/brand/` are outlined, so they don't need the font installed:
+
+- `nolza-logo.svg` / `.png`: dark logo for light backgrounds
+- `nolza-logo-light.svg` / `.png`: light logo for dark backgrounds
+- `nolza-logo-mono.svg`: one colour, for print or engraving
+- `nolza-icon.svg`, `nolza-icon-512.png`, `apple-touch-icon.png`, `favicon-32.png`: the 놀. app icon
+- `nolza-icon-orange.svg` / `-512.png`: orange variant for profile pictures
+
+On the site, the full stop pulses on the beat while a record is playing.
+
 ## Deploy
 
 Any static host works: GitHub Pages (Settings → Pages → deploy from branch), Netlify, Vercel or Cloudflare Pages. Upload the folder as-is.

@@ -64,11 +64,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .topbar.on-dark { color: var(--night-ink); }
 .topbar.on-dark.scrolled { background: color-mix(in srgb, var(--night) 72%, transparent); }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.brand-disc { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, var(--accent) 0 26%, #151515 27% 100%); position: relative; transition: transform .6s var(--ease); }
-.brand-disc::after { content: ''; position: absolute; inset: 11px; border-radius: 50%; background: #151515; }
-.topbar.on-dark .brand-disc { box-shadow: 0 0 0 1px #3a3a3a; }
-.brand:hover .brand-disc, body.playing .brand-disc { animation: spin 1.8s linear infinite; }
-.brand-name { font-weight: 600; font-size: 21px; letter-spacing: -.03em; }
+/* logo: 놀자. — the full stop is always orange */
+.logo-dot { fill: var(--accent); transform-box: fill-box; transform-origin: center; transition: transform .3s var(--ease-spring); }
+.brand-logo { height: 26px; width: auto; }
+.brand:hover .logo-dot { transform: scale(1.35); }
+body.playing .brand-logo .logo-dot { animation: beat var(--beat, .5s) ease-out infinite; }
+@keyframes beat { 0% { transform: scale(1.45); } 60%, 100% { transform: scale(1); } }
 .brand-rule { display: inline-block; width: 34px; height: 1px; background: currentColor; opacity: .4; }
 .brand-sub { color: var(--muted); }
 .onplatter { display: flex; align-items: center; gap: 12px; color: var(--muted); white-space: nowrap; }
@@ -432,7 +433,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     linear-gradient(160deg, #1f1f22, #0e0e10);
   color: var(--night-ink);
 }
-.pf-k { font-family: var(--ko); font-weight: 700; font-size: clamp(70px, 11vw, 160px); line-height: .9; letter-spacing: -.02em; }
+.pf-logo { width: 62%; height: auto; color: var(--night-ink); }
 .pf-s { color: var(--night-muted); }
 .caption { color: var(--muted); margin-top: 18px; font-size: 10.5px; }
 .about-copy p { font-size: 17.5px; color: var(--ink-2); max-width: 58ch; }
@@ -555,8 +556,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .marquee { padding: 30px 0 10px; }
 .marquee-track { display: flex; width: max-content; animation: marquee 28s linear infinite; }
 .marquee-track > span { font-size: clamp(56px, 11vw, 170px); font-weight: 700; letter-spacing: -.05em; line-height: 1; white-space: nowrap; padding-right: .3em; }
+.mq-logo { display: inline-block; height: .78em; width: auto; vertical-align: -.06em; margin: 0 .04em; }
 .marquee-track i { font-style: normal; color: var(--accent); font-size: .35em; vertical-align: middle; }
 @keyframes marquee { to { transform: translateX(-50%); } }
+.footer-brand { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: 40px var(--gutter) 10px; }
+.footer-logo { height: clamp(56px, 8vw, 96px); width: auto; color: var(--night-ink); }
+.footer-brand p { color: var(--night-muted); font-size: 10.5px; margin: 0; }
 .footer-row { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 22px var(--gutter) 28px; color: var(--night-muted); font-size: 10.5px; }
 .footer-row a { text-decoration: none; }
 .footer-row a:hover { color: var(--night-ink); }
