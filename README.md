@@ -27,6 +27,8 @@ python3 -m http.server 8000
 4. **The booth:** two turntables and a mixer.
 5. About, services and packages, and the booking form.
 
+While a record plays and the booth is off screen, a **now playing** bar floats at the bottom. It has a mini spinning record, the title and time left (or "Mixing into…"), play/pause, next, and a button to jump back to the decks.
+
 ### Reviews and venues
 
 Edit `js/reviews.js`. Each review has a quote, a name, the event type, optional venue, city and year, and an optional star rating (only add one if it comes from a real rating). Entries marked `placeholder: true` are drawn as dashed "add yours" cards, so nothing looks like a real review until it is one. Replace them and delete the placeholders. Five or six reviews make a good scroll.

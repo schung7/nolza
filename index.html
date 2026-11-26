@@ -373,6 +373,28 @@
     </div>
   </footer>
 
+  <!-- ============================== NOW PLAYING bar (shown while a record plays, away from the booth) -->
+  <div class="nowbar" id="nowbar" role="region" aria-label="Now playing" aria-hidden="true" inert>
+    <button class="nb-disc" id="nbJump" type="button" aria-label="Go to the decks">
+      <span class="nb-rec" id="nbRec"><span class="nb-label" id="nbLabel"></span></span>
+    </button>
+    <div class="nb-info">
+      <p class="nb-title" id="nbTitle">—</p>
+      <p class="nb-sub mono" id="nbSub"></p>
+    </div>
+    <div class="nb-controls">
+      <button class="nb-btn" id="nbPlay" type="button" aria-label="Pause">
+        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
+      </button>
+      <button class="nb-btn" id="nbNext" type="button" aria-label="Next song">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.2v11.6a1 1 0 0 0 1.53.85L15 13.3V17a1 1 0 0 0 2 0V7a1 1 0 0 0-2 0v3.7L6.53 5.35A1 1 0 0 0 5 6.2Z"/></svg>
+      </button>
+      <a class="nb-decks mono" href="#decks">Decks <span aria-hidden="true">↑</span></a>
+    </div>
+    <div class="nb-progress" aria-hidden="true"><i id="nbProg"></i></div>
+  </div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

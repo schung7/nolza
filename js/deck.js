@@ -434,6 +434,7 @@ export class DeckUI {
     this.el.flow.addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) this.load(this.records[+b.dataset.i], { autoplay: true }); });
     $('npPrev').addEventListener('click', () => this.step(-1));
     $('npNext').addEventListener('click', () => this.step(1));
+    this.initNowbar();
 
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
@@ -622,6 +623,59 @@ export class DeckUI {
     return 'Auto-mix on';
   }
 
+  // ---------------------------------------------------------- now playing bar
+
+  initNowbar() {
+    const nb = (this.nb = {
+      root: $('nowbar'), rec: $('nbRec'), label: $('nbLabel'), title: $('nbTitle'), sub: $('nbSub'),
+      play: $('nbPlay'), next: $('nbNext'), prog: $('nbProg'),
+    });
+    this.boothVisible = false;
+    new IntersectionObserver(([e]) => (this.boothVisible = e.isIntersecting), { threshold: 0.2 }).observe($('booth'));
+    nb.play.addEventListener('click', () => { this.prime(); const v = this.liveView; if (v.rec) { v.toggleMotor(); } });
+    nb.next.addEventListener('click', () => { this.prime(); this.step(1); });
+    $('nbJump').addEventListener('click', () => $('booth').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }
+
+  paintNowbar() {
+    const nb = this.nb, v = this.liveView, rec = v.rec, d = v.deck;
+    if (v.playing) this.everPlayed = true;
+    const show = !!rec && !!this.everPlayed && !this.boothVisible;
+    if (show !== this.nbShown) {
+      this.nbShown = show;
+      nb.root.classList.toggle('show', show);
+      nb.root.toggleAttribute('inert', !show);
+      nb.root.setAttribute('aria-hidden', String(!show));
+      document.body.classList.toggle('has-nowbar', show);
+    }
+    if (!rec) return;
+    if (rec !== this.nbRec) {
+      this.nbRec = rec;
+      nb.label.innerHTML = rec.art ? `<img src="${esc(rec.art)}" alt="" draggable="false">` : labelSVG(rec);
+      nb.title.textContent = rec.kind === 'song' ? `${rec.title}` : rec.title;
+      nb.title.title = rec.title;
+    }
+    if (!show) return;
+    // spinning disc + progress follow the live deck
+    nb.rec.style.transform = `rotate(${v.recAngle.toFixed(1)}deg)`;
+    const p = d.loop ? (d.played % d.length) / d.length : clamp(d.pos / d.length, 0, 1);
+    nb.prog.style.transform = `scaleX(${p.toFixed(4)})`;
+    const playing = d.motorOn;
+    if (playing !== this.nbPlaying) {
+      this.nbPlaying = playing;
+      nb.root.classList.toggle('paused', !playing);
+      nb.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    }
+    let sub;
+    if (this.auto) sub = `Mixing into ${this.auto.rec.cat} ${this.auto.rec.title}`;
+    else {
+      const who = rec.kind === 'song' ? rec.artist : rec.genre;
+      const t = d.loop ? fmt(d.played) : `−${fmt(Math.max(0, (d.length - d.pos) / Math.max(0.2, Math.abs(d.rate) || 1)))}`;
+      sub = `${t} · ${rec.cat} · ${who}`;
+    }
+    if (sub !== this.nbSub) { nb.sub.textContent = sub; this.nbSub = sub; }
+  }
+
   // ---------------------------------------------------------- panel
 
   fillPanel(rec, loading = false) {
@@ -672,6 +726,7 @@ export class DeckUI {
       this.mixerView.paintMeters(dt);
     }
     this.mixerView.paintStatus(this.mixStatus());
+    this.paintNowbar();
     this.driveLights();
     this.drawViz();
     requestAnimationFrame((tt) => this.frame(tt));
