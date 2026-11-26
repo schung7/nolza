@@ -7,6 +7,10 @@ import { coverSVG } from './covers.js';
 import { initBooking } from './booking.js';
 import { CONFIG } from './config.js';
 import { REVIEWS, VENUES } from './reviews.js';
+import { THEMES } from './themes.js';
+
+// the theme was chosen before the page painted (see the script in index.html)
+let theme = THEMES[document.documentElement.dataset.theme] || THEMES.club;
 
 const $ = (id) => document.getElementById(id);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -27,7 +31,10 @@ function renderReviews() {
       <p class="rv-by"><b>${esc(r.name)}</b><span class="mono">${esc(r.event)}${r.where ? ` · ${esc(r.where)}` : ''}</span></p>
     </li>`;
   // the list runs twice so the scroll loops seamlessly
-  track.innerHTML = REVIEWS.map((r) => card(r, false)).join('') + REVIEWS.map((r) => card(r, true)).join('');
+  // the theme's own kind of event leads the scroll
+  const k = theme.eventFirst;
+  const list = k ? [...REVIEWS].sort((a, b) => (b.event || '').toLowerCase().includes(k) - (a.event || '').toLowerCase().includes(k)) : REVIEWS;
+  track.innerHTML = list.map((r) => card(r, false)).join('') + list.map((r) => card(r, true)).join('');
   track.style.setProperty('--dur', `${Math.max(30, REVIEWS.length * 11)}s`);
   $('venueList').innerHTML = VENUES.map((v) => `<li class="${v.placeholder ? 'placeholder' : ''}"><b>${esc(v.name)}</b>${v.city ? `<span class="mono">${esc(v.city)}</span>` : ''}</li>`).join('');
 }
@@ -183,7 +190,7 @@ async function switchGenre(id) {
 
 async function initCrate() {
   // The live chart when it's reachable, otherwise the generated sets.
-  let chart = null, genre = CONFIG.chart?.genre || '';
+  let chart = null, genre = theme.genre ?? CONFIG.chart?.genre ?? '';
   try { genre = localStorage.getItem('nolza-genre') ?? genre; } catch (e) {}
   if (!GENRES.some((g) => g.id === genre)) genre = '';
   if (CONFIG.chart?.enabled !== false) {
@@ -260,7 +267,7 @@ document.querySelectorAll('.format-sleeve').forEach((s) => {
 
 // ------------------------------------------------------------ header + reveals
 const topbar = document.querySelector('.topbar');
-const darkSections = [...document.querySelectorAll('.reviews, .decks, .book, .footer')];
+let darkSections = [...document.querySelectorAll(theme.dark)];
 const onScroll = () => {
   topbar.classList.toggle('scrolled', window.scrollY > 20);
   const y = topbar.offsetHeight / 2;
@@ -283,3 +290,37 @@ new IntersectionObserver(([e]) => document.querySelector('.book').classList.togg
 
 initBooking(RECORDS);
 initCrate();
+
+// ------------------------------------------------------------ themes
+const originalCopy = new Map([...document.querySelectorAll('[data-copy]')].map((el) => [el, el.innerHTML]));
+const originalBook = new Map([...document.querySelectorAll('[data-book-key]')].map((el) => [el, el.dataset.book]));
+
+let autoChecked = null;
+function applyTheme(id, { fromUser = false } = {}) {
+  theme = THEMES[id] || THEMES.club;
+  document.documentElement.dataset.theme = id;
+  try { localStorage.setItem('nolza-theme', id); } catch (e) {}
+  for (const [el, html] of originalCopy) el.innerHTML = theme.copy[el.dataset.copy] ?? html;
+  for (const [el, book] of originalBook) el.dataset.book = theme.book?.[el.dataset.bookKey] ?? book;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.themeColor);
+  document.querySelectorAll('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === id)));
+  darkSections = [...document.querySelectorAll(theme.dark)];
+  onScroll();
+  renderReviews();
+  // start the booking form on this theme's event type, unless the visitor already chose one
+  const form = document.getElementById('bookingForm');
+  const checked = form.querySelector('input[name=event]:checked');
+  if (checked && checked === autoChecked && checked.value !== theme.preselect) { checked.checked = false; autoChecked = null; }
+  if (theme.preselect && !form.querySelector('input[name=event]:checked')) {
+    const r = form.querySelector(`input[name=event][value="${theme.preselect}"]`);
+    if (r) { r.checked = true; autoChecked = r; }
+  }
+  // keep the address in step, so a reload or a shared link shows the same theme
+  if (fromUser) { const u = new URL(location.href); u.searchParams.set('for', id); u.searchParams.delete('theme'); history.replaceState(null, '', u); }
+  if (fromUser && shelf && records[0]?.kind === 'song' && theme.genre !== undefined) switchGenre(theme.genre);
+}
+
+document.querySelectorAll('[data-theme-set]').forEach((b) => b.addEventListener('click', () => {
+  if (b.dataset.themeSet !== document.documentElement.dataset.theme) applyTheme(b.dataset.themeSet, { fromUser: true });
+}));
+applyTheme(document.documentElement.dataset.theme);

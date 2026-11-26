@@ -19,6 +19,20 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
+## Themes: weddings and club
+
+The site has two looks, each with its own wording:
+
+- **Club** (dark, after-hours, lights that pulse with the music): the crate opens on the Dance chart.
+- **Weddings** (ivory and champagne, serif headings, no club lighting): wedding-specific headline, shortcuts and booking button, wedding reviews first, the booking form starts on "Wedding", and the crate opens on the overall chart.
+
+Send clients the matching link:
+
+- `https://<you>.github.io/nolza/wedding/` (or `…/nolza/?for=wedding`)
+- `https://<you>.github.io/nolza/club/` (or `…/nolza/?for=club`)
+
+Visitors can also flip between them with the **Weddings | Club** switch in the header. Their choice is remembered on their device. To change the wording, edit `js/themes.js`. To change which theme people see when they arrive without a link, set `data-default-theme` on the `<html>` tag in `index.html`.
+
 ## Page order
 
 1. **Top:** what you offer and a "Check your date" button. Each of the three service shortcuts jumps to the booking form with that event type already selected.

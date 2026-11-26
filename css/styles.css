@@ -944,3 +944,110 @@ body.has-nowbar .footer { padding-bottom: 96px; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ======================================================================
+   THEME SWITCH (header)
+   ====================================================================== */
+.topbar { grid-template-columns: 1fr auto auto auto; column-gap: 18px; }
+.theme-switch { display: inline-flex; padding: 3px; border-radius: 99px; border: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 70%, transparent); }
+.theme-switch button { border: 0; background: transparent; color: var(--muted); font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 7px 11px; border-radius: 99px; transition: background .25s, color .25s; }
+.theme-switch button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.theme-switch button:not([aria-pressed="true"]):hover { color: var(--ink); }
+.topbar.on-dark .theme-switch { border-color: var(--night-line); background: rgb(255 255 255 / .04); }
+/* the header's "on the platter" readout needs room; the now-playing bar covers it otherwise */
+@media (max-width: 1599px) { .topbar .onplatter { display: none; } .topbar { grid-template-columns: 1fr auto auto; } }
+@media (max-width: 900px) { .topbar { grid-template-columns: 1fr auto auto; } .theme-switch button { padding: 7px 9px; letter-spacing: .06em; } }
+
+/* ======================================================================
+   WEDDING THEME — light, clean, polished
+   ivory and champagne, serif display type, no club lighting
+   ====================================================================== */
+html[data-theme="wedding"] {
+  --bg: #f6f2ea;
+  --bg-2: #efe8dc;
+  --paper: #fffdf8;
+  --ink: #1f1b16;
+  --ink-2: #4b443a;
+  --muted: #8c8375;
+  --line: #e1d7c6;
+  --accent-rgb: 168 130 72;     /* a deeper champagne, readable on ivory */
+  --accent-2: #e3c99a;          /* light tint (used on the dark booth) */
+  --accent-deep: #8a6a36;
+  --on-accent: #ffffff;
+  --glow-accent: none;
+  /* the "night" bands (reviews, booking) become soft ivory too */
+  --night: #f6f2ea;
+  --night-2: #fffdf8;
+  --night-line: #e1d7c6;
+  --night-ink: #1f1b16;
+  --night-muted: #8c8375;
+  --serif: 'Cormorant Garamond', 'Cormorant', Georgia, 'Times New Roman', serif;
+  color-scheme: light;
+}
+/* the booth and footer stay a warm espresso, like real kit */
+html[data-theme="wedding"] .decks, html[data-theme="wedding"] .footer {
+  --night: #1b1714; --night-2: #25201b; --night-line: #3a332b; --night-ink: #f6f1e8; --night-muted: #a59a8a;
+  --ink: #f6f1e8; --ink-2: #d9cfbf; --muted: #a59a8a; --line: #3a332b; --paper: #25201b;
+  background: var(--night); color: var(--night-ink);
+}
+html[data-theme="wedding"] body::after,
+html[data-theme="wedding"] .club-lights,
+html[data-theme="wedding"] .pulse { display: none; }
+
+/* serif display type */
+html[data-theme="wedding"] .hero-title,
+html[data-theme="wedding"] .section-title,
+html[data-theme="wedding"] .crate-title,
+html[data-theme="wedding"] .tracklist .tt,
+html[data-theme="wedding"] .format h3,
+html[data-theme="wedding"] .np-title,
+html[data-theme="wedding"] .slip-done h3 { font-family: var(--serif); font-weight: 500; letter-spacing: -.015em; text-shadow: none; }
+html[data-theme="wedding"] .hero-title { font-size: clamp(52px, 7.6vw, 120px); line-height: .95; }
+html[data-theme="wedding"] .hero-title em, html[data-theme="wedding"] .crate-title em { font-weight: 500; text-shadow: none; }
+html[data-theme="wedding"] .section-title { font-size: clamp(44px, 6.4vw, 96px); line-height: 1; }
+html[data-theme="wedding"] .crate-title { font-size: clamp(34px, 4vw, 58px); }
+html[data-theme="wedding"] .meta-title, html[data-theme="wedding"] .hero-services b { font-family: var(--serif); font-weight: 600; font-size: 1.25em; letter-spacing: 0; }
+
+/* sections */
+html[data-theme="wedding"] .hero {
+  background: radial-gradient(900px 600px at 82% 35%, rgb(var(--accent-rgb) / .12), transparent 70%), radial-gradient(1100px 600px at 10% 100%, rgba(255,255,255,.8), transparent 70%), var(--bg);
+}
+html[data-theme="wedding"] .crate { background: radial-gradient(1200px 500px at 50% 62%, rgba(255,255,255,.65), transparent 70%), var(--bg); }
+html[data-theme="wedding"] .reviews { background: var(--bg-2) !important; }
+html[data-theme="wedding"] .book { background: radial-gradient(900px 600px at 0% 100%, rgb(var(--accent-rgb) / .1), transparent 70%), var(--bg) !important; }
+html[data-theme="wedding"] .formats { background: var(--bg-2); }
+html[data-theme="wedding"] .about { background: var(--bg); }
+
+/* buttons and cards: quieter shadows, hairline borders */
+html[data-theme="wedding"] .btn-primary { box-shadow: 0 12px 26px -16px rgb(var(--accent-rgb) / .7); }
+html[data-theme="wedding"] .hero-services button,
+html[data-theme="wedding"] .format,
+html[data-theme="wedding"] .slip { box-shadow: 0 1px 0 rgba(0,0,0,.02), 0 18px 40px -30px rgba(60,40,10,.35); }
+html[data-theme="wedding"] .hv-sticker { background: var(--paper); color: var(--accent-deep); border: 1px solid var(--accent); box-shadow: 0 12px 26px -14px rgba(60,40,10,.4); text-shadow: none; }
+html[data-theme="wedding"] .nav-cta:hover { box-shadow: none; }
+html[data-theme="wedding"] .rv { box-shadow: 0 16px 36px -28px rgba(60,40,10,.35); }
+html[data-theme="wedding"] .rv.placeholder { border-color: #cdbfa8; background: transparent; box-shadow: none; }
+html[data-theme="wedding"] .rv.placeholder blockquote { color: #9a8f7e; }
+html[data-theme="wedding"] .rv blockquote { font-family: var(--serif); font-size: clamp(20px, 1.6vw, 24px); line-height: 1.32; font-weight: 500; }
+html[data-theme="wedding"] .venue-list li { font-family: var(--serif); font-weight: 500; letter-spacing: -.01em; }
+html[data-theme="wedding"] .venue-list li.placeholder b { color: #a39886; text-decoration-color: #cdbfa8; }
+html[data-theme="wedding"] .rv-tag { color: var(--accent-deep); border-color: rgb(var(--accent-rgb) / .4); }
+
+/* the crate's shelf in pale oak and brass */
+html[data-theme="wedding"] .shelf-ledge {
+  background: radial-gradient(circle closest-side,
+    transparent calc(100% - var(--band-out)), #c9bda8 calc(100% - var(--band-out)), #fbf7ef calc(100% - var(--band-out) + 10px),
+    #e6dccb calc(100% - var(--band-in) - 30px), #d4c7b1 calc(100% - var(--band-in) - 14px), #8a7a5f calc(100% - var(--band-in) - 13px),
+    #d8ccb6 calc(100% - var(--band-in) - 9px), #b2a386 calc(100% - var(--band-in)), transparent calc(100% - var(--band-in) + 1px));
+}
+html[data-theme="wedding"] .ledge-dots { background: repeating-conic-gradient(rgb(var(--accent-rgb) / .55) 0 .18deg, transparent .18deg .5deg); }
+html[data-theme="wedding"] .spine-tip { background: var(--ink); color: var(--bg); }
+
+/* booking form on ivory */
+html[data-theme="wedding"] .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231f1b16' stroke-width='1.5'/%3E%3C/svg%3E"); }
+html[data-theme="wedding"] .book-disc { box-shadow: 0 40px 80px -40px rgba(60,40,10,.5); }
+
+/* now-playing bar in ivory glass */
+html[data-theme="wedding"] .nowbar { background: rgb(255 253 248 / .86); border-color: var(--line); box-shadow: 0 24px 60px -24px rgba(60,40,10,.45); }
+html[data-theme="wedding"] .nb-btn { background: rgb(0 0 0 / .05); }
+html[data-theme="wedding"] .nb-btn:hover { background: rgb(0 0 0 / .09); }
